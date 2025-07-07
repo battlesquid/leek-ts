@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import fetch from "node-fetch";
 import { logSettings } from "../db/schema";
 import { AugmentedListener } from "../utils/bot";
-import { ttry } from "../utils/general";
+import { trycatch } from "../utils/general";
 
 const fetchImage = (url: string) => {
     return new Promise<Buffer>((resolve, reject) => {
@@ -55,7 +55,7 @@ const handleImageLog = async (message: Message<true>, imageChannel: string, payl
     }
 
     payloads.forEach(async (payload) => {
-        ttry(() => channel.send(payload));
+        trycatch(() => channel.send(payload));
     });
 };
 
@@ -99,22 +99,22 @@ export class LogListener extends AugmentedListener<"messageDelete"> {
         }
 
         const pendingPayloads = message.attachments.map((a) => createPayload(a, message));
-        const { result: settings, ok } = await ttry(() =>
+        const [settings, error] = await trycatch(() =>
             this.db.query.logSettings.findFirst({
                 where: eq(logSettings.gid, message.guildId)
             })
         );
-        if (isNullish(settings) || !ok) {
+        if (isNullish(settings) || error !== null) {
             return;
         }
 
         if (settings.image) {
             const resolvedPayloads = await Promise.all(pendingPayloads);
             const validPayloads = resolvedPayloads.filter((r): r is MessageCreateOptions => r !== null);
-            ttry(() => handleImageLog(message, settings.image!, validPayloads));
+            trycatch(() => handleImageLog(message, settings.image!, validPayloads));
         }
         if (settings.message) {
-            ttry(() => handleMessageLog(message, settings.message!));
+            trycatch(() => handleMessageLog(message, settings.message!));
         }
     }
 }

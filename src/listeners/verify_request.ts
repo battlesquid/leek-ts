@@ -4,7 +4,7 @@ import { Message, MessageMentions, Snowflake, inlineCode } from "discord.js";
 import { eq } from "drizzle-orm";
 import { verifyEntry, verifySettings } from "../db/schema";
 import { AugmentedListener, VERIFY_REGEX } from "../utils/bot";
-import { ttry } from "../utils/general";
+import { trycatch } from "../utils/general";
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate
@@ -24,13 +24,13 @@ export class VerifyRequestListener extends AugmentedListener<"messageCreate"> {
             return;
         }
 
-        const { result: settings, ok } = await ttry(() =>
+        const [settings, error] = await trycatch(() =>
             this.db.query.verifySettings.findFirst({
                 where: eq(verifySettings.gid, message.guildId!)
             })
         );
 
-        const canProcessRequest = ok && settings?.type === "message" && message.channelId === settings?.new_user_channel;
+        const canProcessRequest = error === null && settings?.type === "message" && message.channelId === settings?.new_user_channel;
         if (!canProcessRequest) {
             return;
         }
@@ -64,7 +64,7 @@ export class VerifyRequestListener extends AugmentedListener<"messageCreate"> {
     }
 
     private dmUser(id: Snowflake, message: string) {
-        return ttry(() => this.container.client.users.send(id, message));
+        return trycatch(() => this.container.client.users.send(id, message));
     }
 
     static formatNickname(nick: string, team: string) {

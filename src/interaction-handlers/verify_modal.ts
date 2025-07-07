@@ -3,7 +3,7 @@ import { InteractionHandler, InteractionHandlerTypes } from "@sapphire/framework
 import { type ModalSubmitInteraction } from "discord.js";
 import { verifyEntry } from "../db/schema";
 import { VerifyRequestListener } from "../listeners/verify_request";
-import { ttry } from "../utils/general";
+import { trycatch } from "../utils/general";
 
 @ApplyOptions<InteractionHandler.Options>({
     interactionHandlerType: InteractionHandlerTypes.ModalSubmit
@@ -25,7 +25,7 @@ export class VerifyModalHandler extends InteractionHandler {
         const team = inter.fields.getTextInputValue(VerifyModalHandler.TEAM_INPUT);
         const nick = VerifyRequestListener.formatNickname(name, team);
 
-        const { error: upsertError } = await ttry(() =>
+        const [, upsertError] = await trycatch(() =>
             this.container.drizzle
                 .insert(verifyEntry)
                 .values([
