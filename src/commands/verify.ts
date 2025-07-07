@@ -27,7 +27,7 @@ import { VerifyModalHandler } from "../interaction-handlers/verify_modal";
 import { verify } from "../interactions";
 import { VerifyRequestListener } from "../listeners/verify_request";
 import { AugmentedSubcommand, CommandHints, PaginatedEmbed, VERIFY_REGEX, chatInputCommand, emojis, slashCommandMention } from "../utils/bot";
-import { pluralize, ttry } from "../utils/general";
+import { pluralize, trycatch } from "../utils/general";
 
 @ApplyOptions<Subcommand.Options>({
     name: verify.commands.chat.base.name,
@@ -79,7 +79,7 @@ export class VerifyCommand extends AugmentedSubcommand {
             return;
         }
 
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             inter.reply({
                 content: "An error occurred while retrieving your settings.",
@@ -123,7 +123,7 @@ export class VerifyCommand extends AugmentedSubcommand {
     public async chatInputDisable(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
         const logger = this.getCommandLogger(inter);
 
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             inter.reply({
                 content: "An error occurred while retrieving your settings.",
@@ -151,7 +151,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 
     public async chatInputRequest(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
         const logger = this.getCommandLogger(inter);
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             logger.error("An error occurred while retrieving your settings.", error);
             inter.reply({
@@ -194,7 +194,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 
     public async chatInputList(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
         const logger = this.getCommandLogger(inter);
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             inter.reply({
                 content: "An error occurred while retrieving your settings.",
@@ -251,7 +251,7 @@ export class VerifyCommand extends AugmentedSubcommand {
             inter.reply(`${role} is managed by an external service and cannot be used.`);
             return;
         }
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             inter.reply({
                 content: "An error occurred while retrieving your settings.",
@@ -296,7 +296,7 @@ export class VerifyCommand extends AugmentedSubcommand {
             return;
         }
 
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             inter.reply({
                 content: "An error occurred while retrieving your settings.",
@@ -361,7 +361,7 @@ export class VerifyCommand extends AugmentedSubcommand {
         }
 
         const logger = this.getCommandLogger(inter);
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             inter.reply({
                 content: "An error occurred while retrieving your settings.",
@@ -413,7 +413,7 @@ export class VerifyCommand extends AugmentedSubcommand {
         const logger = this.getCommandLogger(inter);
         await inter.deferReply({ ephemeral: true });
 
-        const { settings, error: settingsError } = await this.getSettings(inter.guildId);
+        const [settings, settingsError] = await this.getSettings(inter.guildId);
         if (settingsError) {
             await inter.editReply("An error occurred while retrieving settings.");
             logger.error("An error occurred while retrieving settings.", settingsError);
@@ -434,8 +434,8 @@ export class VerifyCommand extends AugmentedSubcommand {
             return;
         }
 
-        const { result: channel, ok: fetchOk } = await ttry(() => this.container.client.channels.fetch(settings.new_user_channel!));
-        if (!channel || !fetchOk) {
+        const [channel, channelError] = await trycatch(() => this.container.client.channels.fetch(settings.new_user_channel!));
+        if (channel === null || channelError !== null) {
             await inter.editReply(`${channelMention(settings.new_user_channel)} was not found, check that the channel exists, then try again`);
             return;
         }
@@ -446,8 +446,8 @@ export class VerifyCommand extends AugmentedSubcommand {
             return;
         }
 
-        const { ok, result: users } = await ttry(() => this.db.query.verifyEntry.findMany({ where: eq(verifyEntry.gid, inter.guildId) }));
-        if (!ok) {
+        const [users, userError] = await trycatch(() => this.db.query.verifyEntry.findMany({ where: eq(verifyEntry.gid, inter.guildId) }));
+        if (userError !== null) {
             await inter.editReply("An error occurred while retreiving existing users, please try again later.");
             return;
         }
@@ -469,7 +469,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 
         const fetchedMembers = await Promise.all(
             messages.map(async (message) => {
-                const { result: member } = await ttry(() => message.guild?.members.fetch(message.author.id));
+                const [member] = await trycatch(() => message.guild?.members.fetch(message.author.id));
                 return { member, message };
             })
         );
@@ -495,7 +495,7 @@ export class VerifyCommand extends AugmentedSubcommand {
             return;
         }
 
-        const { error } = await ttry(() => this.db.insert(verifyEntry).values(scannedUsers).onConflictDoNothing());
+        const [, error] = await trycatch(() => this.db.insert(verifyEntry).values(scannedUsers).onConflictDoNothing());
         if (error) {
             await inter.editReply(`An error occurred while rescanning ${channelMention(settings.new_user_channel!)}, please try again later.`);
             return;
@@ -529,7 +529,7 @@ export class VerifyCommand extends AugmentedSubcommand {
             response += ` Failed to verify ${failedCount} ${pluralize("user", failedCount)}.`;
         }
 
-        ttry(() => {
+        trycatch(() => {
             return this.db.delete(verifyEntry).where(eq(verifyEntry.gid, inter.guildId));
         });
         await reply.edit(response);
@@ -537,16 +537,15 @@ export class VerifyCommand extends AugmentedSubcommand {
         if (settings.create_greeting && verified.length > 0) {
             const mentions = verified.map((u) => userMention(u.uid)).join(", ");
             const channel = (await inter.guild.channels.fetch(inter.channelId)) as TextChannel;
-            ttry(() => channel.send(inlineCode(`Welcome ${mentions}!`)));
+            trycatch(() => channel.send(inlineCode(`Welcome ${mentions}!`)));
         }
     }
 
     private async getSettings(guildId: string) {
-        const { result: settings, error } = await ttry(() =>
+        return await trycatch(() =>
             this.db.query.verifySettings.findFirst({
                 where: eq(verifySettings.gid, guildId)
             })
         );
-        return { settings, error };
     }
 }

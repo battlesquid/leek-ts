@@ -6,7 +6,7 @@ import { arrayAppend, arrayRemove } from "../db";
 import { imageboard as imageboardTable } from "../db/schema";
 import { imageboard } from "../interactions";
 import { AugmentedSubcommand, CommandHints, chatInputCommand } from "../utils/bot";
-import { ttry } from "../utils/general/try";
+import { trycatch } from "../utils/general/try";
 import { isNullish } from "@sapphire/utilities";
 
 @ApplyOptions<Subcommand.Options>({
@@ -42,7 +42,7 @@ export class ImageBoardCommand extends AugmentedSubcommand {
     public async chatInputEnable(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
         const logger = this.getCommandLogger(inter);
         const channel = inter.options.getChannel<ChannelType.GuildText>("channel", true);
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             inter.reply({
                 content: "An error occurred while retrieving your settings.",
@@ -80,7 +80,7 @@ export class ImageBoardCommand extends AugmentedSubcommand {
         const logger = this.getCommandLogger(inter);
         const channel = inter.options.getChannel<ChannelType.GuildText>("channel", true);
 
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             logger.error("An error occurred while retrieving your settings.", error);
             return;
@@ -105,7 +105,7 @@ export class ImageBoardCommand extends AugmentedSubcommand {
         const logger = this.getCommandLogger(inter);
 
         const role = inter.options.getRole("role", true);
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             logger.error("An error occurred while retrieving your settings.", error);
             return;
@@ -134,7 +134,7 @@ export class ImageBoardCommand extends AugmentedSubcommand {
         const logger = this.getCommandLogger(inter);
         const role = inter.options.getRole("role", true);
 
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             logger.error("An error occurred while retrieving settings.", error);
             return;
@@ -160,11 +160,10 @@ export class ImageBoardCommand extends AugmentedSubcommand {
     }
 
     private async getSettings(guildId: string) {
-        const { result: settings, error } = await ttry(() =>
+        return await trycatch(() =>
             this.db.query.imageboard.findFirst({
                 where: eq(imageboardTable.gid, guildId)
             })
         );
-        return { settings, error };
     }
 }

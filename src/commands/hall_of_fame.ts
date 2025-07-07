@@ -21,7 +21,7 @@ import { arrayAppend, arrayRemove } from "../db";
 import { hallOfFameSettings } from "../db/schema";
 import { hall_of_fame } from "../interactions";
 import { AugmentedSubcommand, CommandHints, YOUTUBE_REGEX, chatInputCommand, messageCommand, slashCommandMention, timestring } from "../utils/bot";
-import { pluralize, ttry } from "../utils/general";
+import { pluralize, trycatch } from "../utils/general";
 
 @ApplyOptions<Subcommand.Options>({
     name: hall_of_fame.commands.chat.base.name,
@@ -62,7 +62,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
         const logger = this.getCommandLogger(inter);
         const channel = inter.options.getChannel<ChannelType.GuildText>("channel", true);
 
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             inter.reply({
                 content: "An error occurred while retrieving your settings.",
@@ -103,7 +103,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
     public async chatInputDisable(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
         const logger = this.getCommandLogger(inter);
         const channel = inter.options.getChannel("channel", true);
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
 
         if (error) {
             inter.reply({
@@ -139,7 +139,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
             return;
         }
 
-        const { settings, error } = await this.getSettings(inter.guildId);
+        const [settings, error] = await this.getSettings(inter.guildId);
         if (error) {
             inter.reply({
                 content: "An error occurred while retreiving your settings.",
@@ -159,7 +159,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
 
         const channelData = await Promise.all(
             settings.halls.map(async (hall) => {
-                const { result: channel } = await ttry(() => inter.guild.channels.fetch(hall));
+                const [channel] = await trycatch(() => inter.guild.channels.fetch(hall));
                 return {
                     exists: !isNullish(channel),
                     channel
@@ -206,7 +206,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
 
     private async handleHallSelection(inter: ContextMenuCommandInteraction<"cached">, selectInter: StringSelectMenuInteraction) {
         const hallChannelId = selectInter.values[0];
-        const { result: hall, error: hallError } = await ttry(() => inter.guild.channels.fetch(hallChannelId));
+        const [hall, hallError] = await trycatch(() => inter.guild.channels.fetch(hallChannelId));
         if (hallError) {
             inter.editReply({
                 content: "An error occurred while retreiving channel.",
@@ -214,8 +214,8 @@ export class HallOfFameCommand extends AugmentedSubcommand {
             });
             return;
         }
-        const { result: message, ok: messageOk } = await ttry(() => inter.channel!.messages.fetch(inter.targetId));
-        if (!messageOk) {
+        const [message, messageError] = await trycatch(() => inter.channel!.messages.fetch(inter.targetId));
+        if (messageError) {
             inter.editReply({
                 content: "An error occurred while retreiving target message.",
                 components: []
@@ -283,11 +283,10 @@ export class HallOfFameCommand extends AugmentedSubcommand {
     }
 
     private async getSettings(guildId: string) {
-        const { result: settings, error } = await ttry(() =>
+        return await trycatch(() =>
             this.db.query.hallOfFameSettings.findFirst({
                 where: eq(hallOfFameSettings.gid, guildId)
             })
         );
-        return { settings, error };
     }
 }

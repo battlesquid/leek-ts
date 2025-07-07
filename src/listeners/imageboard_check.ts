@@ -1,4 +1,4 @@
-import { ttry } from "../utils/general/try";
+import { trycatch } from "../utils/general/try";
 import { ApplyOptions } from "@sapphire/decorators";
 import { Events, Listener } from "@sapphire/framework";
 import { imageboard } from "../db/schema";
@@ -15,7 +15,7 @@ export class ImageboardCheckListener extends Listener {
         if (!msg.inGuild()) {
             return;
         }
-        const { result: settings, error } = await ttry(() =>
+        const [settings, error] = await trycatch(() =>
             this.container.drizzle.query.imageboard.findFirst({
                 where: eq(imageboard.gid, msg.guildId)
             })
@@ -35,7 +35,7 @@ export class ImageboardCheckListener extends Listener {
         const notWhitelisted = !roles?.hasAny(...settings.whitelist);
 
         if (locked && hasNoLink && hasNoAttachments && notWhitelisted) {
-            ttry(() => msg.delete());
+            trycatch(() => msg.delete());
         }
     }
 }

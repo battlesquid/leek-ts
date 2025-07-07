@@ -5,7 +5,7 @@ import { ChannelType, ColorResolvable, Embed, EmbedBuilder, Message, TextChannel
 import emojiRegex from "emoji-regex";
 import { reactroles } from "../interactions";
 import { AugmentedSubcommand, CommandHints, chatInputCommand } from "../utils/bot";
-import { ttry } from "../utils/general";
+import { trycatch } from "../utils/general";
 
 @ApplyOptions<Subcommand.Options>({
     name: reactroles.commands.chat.base.name,
@@ -37,8 +37,8 @@ export class ReactRolesCommand extends AugmentedSubcommand {
     }
 
     private async findReactRole(channel: TextChannel, name: string): Promise<[Message | undefined, Embed | undefined, size: number]> {
-        const { result: messages, ok } = await ttry(() => channel.messages.fetch({ limit: 100 }));
-        if (!ok) {
+        const [messages, error] = await trycatch(() => channel.messages.fetch({ limit: 100 }));
+        if (error !== null) {
             return [undefined, undefined, 0];
         }
         const msg = messages.find((m) => {
