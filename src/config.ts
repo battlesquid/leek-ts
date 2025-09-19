@@ -1,12 +1,11 @@
-import { config as configenv } from "dotenv";
-import * as path from "path";
+import { config as configenv } from "@dotenvx/dotenvx";
 
 const ENV_VARIABLES = ["DISCORD_TOKEN", "NODE_ENV", "LOKI_HOST", "LOKI_USERNAME", "LOKI_PASSWORD", "DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME"] as const;
 
 type ConfigVariable = (typeof ENV_VARIABLES)[number];
 
 const loadConfig = () => {
-    const { error } = configenv({ path: path.resolve(__dirname, "../.env") });
+    const { error } = configenv();
     if (error) {
         console.error(error);
         throw Error("Environment variables could not be loaded, exiting");
