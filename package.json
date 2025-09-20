@@ -1,63 +1,63 @@
 {
-    "name": "leek",
-    "version": "1.0.0",
-    "description": "general purpose bot",
-    "license": "GPL-3.0-only",
-    "main": "dist/index.js",
-    "private": true,
-    "scripts": {
-        "prepare": "husky",
-        "start": "dotenvx run -f .env.production -- node dist/index.js",
-        "dev": "dotenvx run -f .env.production -- node dist/index.js | pino-pretty",
-        "build": "tsc",
-        "build:clean": "yarn clean && yarn build",
-        "clean": "rm -rf dist",
-        "clean:all": "yarn clean && rm -rf node_modules",
-        "lint": "eslint src/**",
-        "run_migrate": "node dist/migrate.js",
-        "vault:remove-previous": "rm -rf .env.previous .env.production.previous",
-        "vault:pull": "dotenv-vault pull && dotenv-vault pull production && yarn vault:remove-previous",
-        "vault:push": "dotenv-vault push && dotenv-vault push production && yarn vault:pull"
-    },
-    "dependencies": {
-        "@dotenvx/dotenvx": "^1.50.1",
-        "@infisical/sdk": "^4.0.5",
-        "@sapphire/decorators": "^6.1.0",
-        "@sapphire/discord.js-utilities": "^7.3.0",
-        "@sapphire/framework": "^5.2.1",
-        "@sapphire/plugin-subcommands": "^6.0.3",
-        "@sapphire/utilities": "^3.16.2",
-        "discord.js": "^14.15.3",
-        "drizzle-orm": "^0.31.2",
-        "emoji-regex": "^10.3.0",
-        "ms": "^2.1.3",
-        "node-fetch": "2",
-        "pg": "^8.12.0",
-        "pino": "^8.20.0",
-        "pino-loki": "^2.5.0"
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.0.0",
-        "@types/ms": "^0.7.34",
-        "@types/node": "^20.12.7",
-        "@types/node-fetch": "^2.6.11",
-        "@types/pg": "^8.11.6",
-        "drizzle-kit": "^0.22.8",
-        "eslint": "^9.0.0",
-        "eslint-config-prettier": "^8.5.0",
-        "husky": "^9.0.11",
-        "lint-staged": "^15.2.2",
-        "pino-pretty": "^11.2.1",
-        "prettier": "3.2.5",
-        "typescript": "^5.4.5",
-        "typescript-eslint": "^7.6.0"
-    },
-    "lint-staged": {
-        "*.ts": "yarn lint --fix",
-        "**/*": "prettier --write --ignore-unknown"
-    },
-    "volta": {
-        "yarn": "1.22.22",
-        "node": "21.7.2"
-    }
+	"name": "leek",
+	"version": "1.0.0",
+	"description": "general purpose bot",
+	"license": "GPL-3.0-only",
+	"main": "dist/index.js",
+	"private": true,
+	"scripts": {
+		"prepare": "husky",
+		"start": "node dist/index.js",
+		"dev": "pnpm start | pino-pretty",
+		"build": "tsc",
+		"build:clean": "pnpm clean && pnpm build",
+		"clean": "rm -rf dist",
+		"clean:all": "pnpm clean && rm -rf node_modules",
+		"neat": "biome check .",
+		"neat:fix": "biome check . --write",
+		"run_migrate": "node dist/migrate.js",
+		"vault:remove-previous": "rm -rf .env.previous .env.production.previous",
+		"vault:pull": "dotenv-vault pull && dotenv-vault pull production && pnpm vault:remove-previous",
+		"vault:push": "dotenv-vault push && dotenv-vault push production && pnpm vault:pull"
+	},
+	"dependencies": {
+		"@sapphire/decorators": "^6.1.0",
+		"@sapphire/discord.js-utilities": "^7.3.0",
+		"@sapphire/framework": "^5.2.1",
+		"@sapphire/plugin-subcommands": "^7.0.1",
+		"@sapphire/utilities": "^3.16.2",
+		"discord.js": "^14.22.1",
+		"dotenv": "^17.2.2",
+		"drizzle-orm": "^0.44.5",
+		"emoji-regex": "^10.5.0",
+		"ms": "^2.1.3",
+		"pg": "^8.12.0",
+		"pino": "^9.10.0",
+		"pino-loki": "^2.5.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.2.4",
+		"@sapphire/pieces": "^4.4.1",
+		"@types/ms": "^2.1.0",
+		"@types/node": "^24.5.2",
+		"@types/pg": "^8.15.5",
+		"dotenv-vault": "^1.26.2",
+		"drizzle-kit": "^0.31.4",
+		"husky": "^9.0.11",
+		"lint-staged": "^16.1.6",
+		"pino-pretty": "^13.1.1",
+		"typescript": "^5.9.2"
+	},
+	"lint-staged": {
+		"**/*": "pnpm neat:fix"
+	},
+	"volta": {
+		"pnpm": "10.17.0",
+		"node": "24.3.0"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"esbuild"
+		]
+	}
 }

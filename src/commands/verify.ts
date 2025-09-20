@@ -1,551 +1,738 @@
 import { ApplyOptions } from "@sapphire/decorators";
-import { Subcommand } from "@sapphire/plugin-subcommands";
+import type { Subcommand } from "@sapphire/plugin-subcommands";
 import { isNullish } from "@sapphire/utilities";
 import {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonInteraction,
-    ButtonStyle,
-    ChannelType,
-    EmbedBuilder,
-    GuildMember,
-    Message,
-    ModalActionRowComponentBuilder,
-    ModalBuilder,
-    TextChannel,
-    TextInputBuilder,
-    TextInputStyle,
-    bold,
-    channelMention,
-    inlineCode,
-    userMention
+	ActionRowBuilder,
+	ButtonBuilder,
+	type ButtonInteraction,
+	ButtonStyle,
+	bold,
+	ChannelType,
+	channelMention,
+	EmbedBuilder,
+	type GuildMember,
+	inlineCode,
+	type Message,
+	type ModalActionRowComponentBuilder,
+	ModalBuilder,
+	type TextChannel,
+	TextInputBuilder,
+	TextInputStyle,
+	userMention,
 } from "discord.js";
 import { eq } from "drizzle-orm";
 import { arrayAppend, arrayRemove, arrayReplace } from "../db";
-import { VerifySettings, VerifyUser, verifyEntry, verifySettings } from "../db/schema";
+import {
+	type VerifySettings,
+	type VerifyUser,
+	verifyEntry,
+	verifySettings,
+} from "../db/schema";
 import { VerifyModalHandler } from "../interaction-handlers/verify_modal";
 import { verify } from "../interactions";
 import { VerifyRequestListener } from "../listeners/verify_request";
-import { AugmentedSubcommand, CommandHints, PaginatedEmbed, VERIFY_REGEX, chatInputCommand, emojis, slashCommandMention } from "../utils/bot";
+import {
+	AugmentedSubcommand,
+	CommandHints,
+	chatInputCommand,
+	emojis,
+	PaginatedEmbed,
+	slashCommandMention,
+	VERIFY_REGEX,
+} from "../utils/bot";
 import { pluralize, trycatch } from "../utils/general";
 
 @ApplyOptions<Subcommand.Options>({
-    name: verify.commands.chat.base.name,
-    subcommands: [
-        chatInputCommand(verify.commands.chat.subcommands.list.name),
-        chatInputCommand(verify.commands.chat.subcommands.enable.name),
-        chatInputCommand(verify.commands.chat.subcommands.disable.name),
-        chatInputCommand(verify.commands.chat.subcommands.add_role.name),
-        chatInputCommand(verify.commands.chat.subcommands.remove_role.name),
-        chatInputCommand(verify.commands.chat.subcommands.edit.name),
-        chatInputCommand(verify.commands.chat.subcommands.request.name),
-        chatInputCommand(verify.commands.chat.subcommands.rescan.name)
-    ],
-    preconditions: ["GuildTextOnly"],
-    requiredUserPermissions: verify.permissions,
-    requiredClientPermissions: ["SendMessages", "ManageNicknames", "UseExternalEmojis"]
+	name: verify.commands.chat.base.name,
+	subcommands: [
+		chatInputCommand(verify.commands.chat.subcommands.list.name),
+		chatInputCommand(verify.commands.chat.subcommands.enable.name),
+		chatInputCommand(verify.commands.chat.subcommands.disable.name),
+		chatInputCommand(verify.commands.chat.subcommands.add_role.name),
+		chatInputCommand(verify.commands.chat.subcommands.remove_role.name),
+		chatInputCommand(verify.commands.chat.subcommands.edit.name),
+		chatInputCommand(verify.commands.chat.subcommands.request.name),
+		chatInputCommand(verify.commands.chat.subcommands.rescan.name),
+	],
+	preconditions: ["GuildTextOnly"],
+	requiredUserPermissions: verify.permissions,
+	requiredClientPermissions: [
+		"SendMessages",
+		"ManageNicknames",
+		"UseExternalEmojis",
+	],
 })
 export class VerifyCommand extends AugmentedSubcommand {
-    hints() {
-        return new CommandHints({
-            chat: {
-                development: "919820845126385737",
-                production: "957187610416144389"
-            }
-        });
-    }
+	hints() {
+		return new CommandHints({
+			chat: {
+				development: "919820845126385737",
+				production: "957187610416144389",
+			},
+		});
+	}
 
-    public override registerApplicationCommands(registry: Subcommand.Registry) {
-        const hints = this.hints();
-        registry.registerChatInputCommand(verify.commands.chat.base, {
-            idHints: [hints.chat.development, hints.chat.production]
-        });
-    }
+	public override registerApplicationCommands(registry: Subcommand.Registry) {
+		const hints = this.hints();
+		registry.registerChatInputCommand(verify.commands.chat.base, {
+			idHints: [hints.chat.development, hints.chat.production],
+		});
+	}
 
-    public async chatInputEnable(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
-        const logger = this.getCommandLogger(inter);
-        const role = inter.options.getRole("role", true);
-        const type = inter.options.getString("type", true);
-        const channel = inter.options.getChannel("new_user_channel", false);
-        const createGreeting = inter.options.getBoolean("create_greeting", false) ?? false;
+	public async chatInputEnable(
+		inter: Subcommand.ChatInputCommandInteraction<"cached">,
+	) {
+		const logger = this.getCommandLogger(inter);
+		const role = inter.options.getRole("role", true);
+		const type = inter.options.getString("type", true);
+		const channel = inter.options.getChannel("new_user_channel", false);
+		const createGreeting =
+			inter.options.getBoolean("create_greeting", false) ?? false;
 
-        if (type === "message" && isNullish(channel)) {
-            inter.reply("You must specify a new users channel for message verification");
-            return;
-        }
+		if (type === "message" && isNullish(channel)) {
+			inter.reply(
+				"You must specify a new users channel for message verification",
+			);
+			return;
+		}
 
-        if (role.managed) {
-            inter.reply(`${role} is managed by an external service and cannot be used.`);
-            return;
-        }
+		if (role.managed) {
+			inter.reply(
+				`${role} is managed by an external service and cannot be used.`,
+			);
+			return;
+		}
 
-        const [settings, error] = await this.getSettings(inter.guildId);
-        if (error) {
-            inter.reply({
-                content: "An error occurred while retrieving your settings.",
-                ephemeral: true
-            });
-            logger.error("An error occurred while retrieving your settings.", error);
-            return;
-        }
-        if (settings) {
-            const mention = slashCommandMention(this.name, verify.commands.chat.subcommands.edit.name, this.hints().getChatId());
-            inter.reply(`Verification is already enabled. Edit your settings with ${mention}.`);
-            return;
-        }
+		const [settings, error] = await this.getSettings(inter.guildId);
+		if (error) {
+			inter.reply({
+				content: "An error occurred while retrieving your settings.",
+				ephemeral: true,
+			});
+			logger.error("An error occurred while retrieving your settings.", error);
+			return;
+		}
+		if (settings) {
+			const mention = slashCommandMention(
+				this.name,
+				verify.commands.chat.subcommands.edit.name,
+				this.hints().getChatId(),
+			);
+			inter.reply(
+				`Verification is already enabled. Edit your settings with ${mention}.`,
+			);
+			return;
+		}
 
-        const newUserChannel = type === "message" ? channel?.id : null;
-        const command = this.getCommandMention(verify.commands.chat.subcommands.request.name, "chat");
-        const successText =
-            type === "message"
-                ? ` Users can send their name in the format ${inlineCode("Name | Team")} in the channel ${channel} to submit a verification request.`
-                : ` Users can use the command ${command} to submit a verification request.`;
-        try {
-            await this.db.insert(verifySettings).values([
-                {
-                    gid: inter.guildId,
-                    type,
-                    new_user_channel: newUserChannel,
-                    roles: [role.id],
-                    create_greeting: createGreeting
-                }
-            ]);
-            inter.reply(`Verification enabled.${successText}`);
-        } catch (error) {
-            inter.reply({
-                content: "An error occurred while enabling verification.",
-                ephemeral: true
-            });
-            logger.error("An error occurred while enabling verification.", error);
-        }
-    }
+		const newUserChannel = type === "message" ? channel?.id : null;
+		const command = this.getCommandMention(
+			verify.commands.chat.subcommands.request.name,
+			"chat",
+		);
+		const successText =
+			type === "message"
+				? ` Users can send their name in the format ${inlineCode("Name | Team")} in the channel ${channel} to submit a verification request.`
+				: ` Users can use the command ${command} to submit a verification request.`;
+		try {
+			await this.db.insert(verifySettings).values([
+				{
+					gid: inter.guildId,
+					type,
+					new_user_channel: newUserChannel,
+					roles: [role.id],
+					create_greeting: createGreeting,
+				},
+			]);
+			inter.reply(`Verification enabled.${successText}`);
+		} catch (error) {
+			inter.reply({
+				content: "An error occurred while enabling verification.",
+				ephemeral: true,
+			});
+			logger.error("An error occurred while enabling verification.", error);
+		}
+	}
 
-    public async chatInputDisable(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
-        const logger = this.getCommandLogger(inter);
+	public async chatInputDisable(
+		inter: Subcommand.ChatInputCommandInteraction<"cached">,
+	) {
+		const logger = this.getCommandLogger(inter);
 
-        const [settings, error] = await this.getSettings(inter.guildId);
-        if (error) {
-            inter.reply({
-                content: "An error occurred while retrieving your settings.",
-                ephemeral: true
-            });
-            logger.error("An error occurred while retrieving your settings.", error);
-            return;
-        }
-        if (isNullish(settings)) {
-            inter.reply("Verification is already disabled.");
-            return;
-        }
-        try {
-            await this.db.delete(verifySettings).where(eq(verifySettings.gid, inter.guildId));
-            await this.db.delete(verifyEntry).where(eq(verifyEntry.gid, inter.guildId));
-            inter.reply("Verification disabled.");
-        } catch (error) {
-            inter.reply({
-                content: "An error occurred while disabling verification.",
-                ephemeral: true
-            });
-            logger.error("An error occurred while disabling verification.", error);
-        }
-    }
+		const [settings, error] = await this.getSettings(inter.guildId);
+		if (error) {
+			inter.reply({
+				content: "An error occurred while retrieving your settings.",
+				ephemeral: true,
+			});
+			logger.error("An error occurred while retrieving your settings.", error);
+			return;
+		}
+		if (isNullish(settings)) {
+			inter.reply("Verification is already disabled.");
+			return;
+		}
+		try {
+			await this.db
+				.delete(verifySettings)
+				.where(eq(verifySettings.gid, inter.guildId));
+			await this.db
+				.delete(verifyEntry)
+				.where(eq(verifyEntry.gid, inter.guildId));
+			inter.reply("Verification disabled.");
+		} catch (error) {
+			inter.reply({
+				content: "An error occurred while disabling verification.",
+				ephemeral: true,
+			});
+			logger.error("An error occurred while disabling verification.", error);
+		}
+	}
 
-    public async chatInputRequest(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
-        const logger = this.getCommandLogger(inter);
-        const [settings, error] = await this.getSettings(inter.guildId);
-        if (error) {
-            logger.error("An error occurred while retrieving your settings.", error);
-            inter.reply({
-                content: "An error occurred while processing your request, please try again later.",
-                ephemeral: true
-            });
-            return;
-        }
-        if (isNullish(settings)) {
-            inter.reply({
-                content: "This server does not have verification enabled.",
-                ephemeral: true
-            });
-            return;
-        }
+	public async chatInputRequest(
+		inter: Subcommand.ChatInputCommandInteraction<"cached">,
+	) {
+		const logger = this.getCommandLogger(inter);
+		const [settings, error] = await this.getSettings(inter.guildId);
+		if (error) {
+			logger.error("An error occurred while retrieving your settings.", error);
+			inter.reply({
+				content:
+					"An error occurred while processing your request, please try again later.",
+				ephemeral: true,
+			});
+			return;
+		}
+		if (isNullish(settings)) {
+			inter.reply({
+				content: "This server does not have verification enabled.",
+				ephemeral: true,
+			});
+			return;
+		}
 
-        if (settings.type !== "command") {
-            inter.reply({
-                content: `This server does not have command verification enabled. Send your request in ${channelMention(settings.new_user_channel!)} in the format ${inlineCode("Name | Team")}.`,
-                ephemeral: true
-            });
-            return;
-        }
+		if (settings.type !== "command") {
+			inter.reply({
+				content: `This server does not have command verification enabled. Send your request in ${channelMention(settings.new_user_channel!)} in the format ${inlineCode("Name | Team")}.`,
+				ephemeral: true,
+			});
+			return;
+		}
 
-        if (inter.member.roles.cache.hasAll(...settings.roles)) {
-            inter.reply({
-                content: "You are already verified!",
-                ephemeral: true
-            });
-            return;
-        }
+		if (inter.member.roles.cache.hasAll(...settings.roles)) {
+			inter.reply({
+				content: "You are already verified!",
+				ephemeral: true,
+			});
+			return;
+		}
 
-        const modal = new ModalBuilder().setCustomId(VerifyModalHandler.MODAL_ID).setTitle("Request Verification");
-        const nameInput = new TextInputBuilder().setCustomId(VerifyModalHandler.NAME_INPUT).setLabel("Name").setStyle(TextInputStyle.Short);
-        const teamInput = new TextInputBuilder().setCustomId(VerifyModalHandler.TEAM_INPUT).setLabel("Team").setStyle(TextInputStyle.Short);
-        modal.addComponents(new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(nameInput), new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(teamInput));
+		const modal = new ModalBuilder()
+			.setCustomId(VerifyModalHandler.MODAL_ID)
+			.setTitle("Request Verification");
+		const nameInput = new TextInputBuilder()
+			.setCustomId(VerifyModalHandler.NAME_INPUT)
+			.setLabel("Name")
+			.setStyle(TextInputStyle.Short);
+		const teamInput = new TextInputBuilder()
+			.setCustomId(VerifyModalHandler.TEAM_INPUT)
+			.setLabel("Team")
+			.setStyle(TextInputStyle.Short);
+		modal.addComponents(
+			new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
+				nameInput,
+			),
+			new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
+				teamInput,
+			),
+		);
 
-        await inter.showModal(modal);
-    }
+		await inter.showModal(modal);
+	}
 
-    public async chatInputList(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
-        const logger = this.getCommandLogger(inter);
-        const [settings, error] = await this.getSettings(inter.guildId);
-        if (error) {
-            inter.reply({
-                content: "An error occurred while retrieving your settings.",
-                ephemeral: true
-            });
-            logger.error("An error occurred while retrieving your settings.", error);
-            return;
-        }
-        if (isNullish(settings)) {
-            const mention = slashCommandMention(this.name, verify.commands.chat.subcommands.enable.name, this.hints().getChatId());
-            inter.reply(`Verification is not enabled. Enable it with ${mention}.`);
-            return;
-        }
+	public async chatInputList(
+		inter: Subcommand.ChatInputCommandInteraction<"cached">,
+	) {
+		const logger = this.getCommandLogger(inter);
+		const [settings, error] = await this.getSettings(inter.guildId);
+		if (error) {
+			inter.reply({
+				content: "An error occurred while retrieving your settings.",
+				ephemeral: true,
+			});
+			logger.error("An error occurred while retrieving your settings.", error);
+			return;
+		}
+		if (isNullish(settings)) {
+			const mention = slashCommandMention(
+				this.name,
+				verify.commands.chat.subcommands.enable.name,
+				this.hints().getChatId(),
+			);
+			inter.reply(`Verification is not enabled. Enable it with ${mention}.`);
+			return;
+		}
 
-        const users = await this.db.query.verifyEntry.findMany({
-            where: eq(verifyEntry.gid, inter.guildId)
-        });
+		const users = await this.db.query.verifyEntry.findMany({
+			where: eq(verifyEntry.gid, inter.guildId),
+		});
 
-        if (users.length === 0) {
-            inter.reply("No pending verifications.");
-            return;
-        }
+		if (users.length === 0) {
+			inter.reply("No pending verifications.");
+			return;
+		}
 
-        const rescanMention = slashCommandMention(this.name, verify.commands.chat.subcommands.rescan.name, this.hints().getChatId());
-        const template = new EmbedBuilder().setColor("Greyple");
-        const SUBMIT_ID = "@leekbot/submit";
-        new PaginatedEmbed({
-            inter,
-            title: "Verification List",
-            useLargeTitle: true,
-            items: users,
-            itemsPerPage: 6,
-            timeout: 10_000,
-            template,
-            prev: new ButtonBuilder().setEmoji(emojis.LeftArrow).setStyle(ButtonStyle.Primary),
-            next: new ButtonBuilder().setEmoji(emojis.RightArrow).setStyle(ButtonStyle.Primary),
-            actions: [new ButtonBuilder().setCustomId(SUBMIT_ID).setEmoji(emojis.Checkmark).setStyle(ButtonStyle.Success)],
-            itemFormatter: (user, i) => `${inlineCode(`${i + 1}. `)}  ${bold(user.nick)} •︎ ${userMention(user.uid)}`,
-            footerFormatter: () => `Users missing? Run ${rescanMention} to detect missed users.`,
-            onCollect: async (collector, inter) => {
-                if (inter.customId !== SUBMIT_ID) {
-                    return;
-                }
-                collector.stop();
-                await this.onVerifySubmit(settings, users, inter as ButtonInteraction<"cached">);
-            }
-        }).send();
-    }
+		const rescanMention = slashCommandMention(
+			this.name,
+			verify.commands.chat.subcommands.rescan.name,
+			this.hints().getChatId(),
+		);
+		const template = new EmbedBuilder().setColor("Greyple");
+		const SUBMIT_ID = "@leekbot/submit";
+		new PaginatedEmbed({
+			inter,
+			title: "Verification List",
+			useLargeTitle: true,
+			items: users,
+			itemsPerPage: 6,
+			timeout: 10_000,
+			template,
+			prev: new ButtonBuilder()
+				.setEmoji(emojis.LeftArrow)
+				.setStyle(ButtonStyle.Primary),
+			next: new ButtonBuilder()
+				.setEmoji(emojis.RightArrow)
+				.setStyle(ButtonStyle.Primary),
+			actions: [
+				new ButtonBuilder()
+					.setCustomId(SUBMIT_ID)
+					.setEmoji(emojis.Checkmark)
+					.setStyle(ButtonStyle.Success),
+			],
+			itemFormatter: (user, i) =>
+				`${inlineCode(`${i + 1}. `)}  ${bold(user.nick)} •︎ ${userMention(user.uid)}`,
+			footerFormatter: () =>
+				`Users missing? Run ${rescanMention} to detect missed users.`,
+			onCollect: async (collector, inter) => {
+				if (inter.customId !== SUBMIT_ID) {
+					return;
+				}
+				collector.stop();
+				await this.onVerifySubmit(
+					settings,
+					users,
+					inter as ButtonInteraction<"cached">,
+				);
+			},
+		}).send();
+	}
 
-    public async chatInputAddRole(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
-        const logger = this.getCommandLogger(inter);
-        const role = inter.options.getRole("role", true);
-        if (role.managed) {
-            inter.reply(`${role} is managed by an external service and cannot be used.`);
-            return;
-        }
-        const [settings, error] = await this.getSettings(inter.guildId);
-        if (error) {
-            inter.reply({
-                content: "An error occurred while retrieving your settings.",
-                ephemeral: true
-            });
-            logger.error("An error occurred while retrieving your settings.", error);
-            return;
-        }
-        if (isNullish(settings)) {
-            const mention = slashCommandMention(this.name, verify.commands.chat.subcommands.enable.name, this.hints().getChatId());
-            inter.reply(`Verification is not enabled. Enable it with ${mention}.`);
-            return;
-        }
+	public async chatInputAddRole(
+		inter: Subcommand.ChatInputCommandInteraction<"cached">,
+	) {
+		const logger = this.getCommandLogger(inter);
+		const role = inter.options.getRole("role", true);
+		if (role.managed) {
+			inter.reply(
+				`${role} is managed by an external service and cannot be used.`,
+			);
+			return;
+		}
+		const [settings, error] = await this.getSettings(inter.guildId);
+		if (error) {
+			inter.reply({
+				content: "An error occurred while retrieving your settings.",
+				ephemeral: true,
+			});
+			logger.error("An error occurred while retrieving your settings.", error);
+			return;
+		}
+		if (isNullish(settings)) {
+			const mention = slashCommandMention(
+				this.name,
+				verify.commands.chat.subcommands.enable.name,
+				this.hints().getChatId(),
+			);
+			inter.reply(`Verification is not enabled. Enable it with ${mention}.`);
+			return;
+		}
 
-        const included = settings.roles.find((r) => r === role.id);
-        if (included) {
-            inter.reply(`${role} is already included in the list of roles.`);
-            return;
-        }
+		const included = settings.roles.find((r) => r === role.id);
+		if (included) {
+			inter.reply(`${role} is already included in the list of roles.`);
+			return;
+		}
 
-        try {
-            await this.db
-                .update(verifySettings)
-                .set({ roles: arrayAppend(verifySettings.roles, role.id) })
-                .where(eq(verifySettings.gid, inter.guildId));
-            inter.reply(`Added ${role} to verification roles.`);
-        } catch (error) {
-            inter.reply({
-                content: `An error occurred while trying to add ${role} to verification roles.`,
-                ephemeral: true
-            });
-            logger.error(`An error occurred while trying to add ${role.name} to verification roles.`, error);
-        }
-    }
-    public async chatInputRemoveRole(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
-        const logger = this.getCommandLogger(inter);
-        const role = inter.options.getRole("role", true);
-        const replacementRole = inter.options.getRole("replacement_role", false);
+		try {
+			await this.db
+				.update(verifySettings)
+				.set({ roles: arrayAppend(verifySettings.roles, role.id) })
+				.where(eq(verifySettings.gid, inter.guildId));
+			inter.reply(`Added ${role} to verification roles.`);
+		} catch (error) {
+			inter.reply({
+				content: `An error occurred while trying to add ${role} to verification roles.`,
+				ephemeral: true,
+			});
+			logger.error(
+				`An error occurred while trying to add ${role.name} to verification roles.`,
+				error,
+			);
+		}
+	}
+	public async chatInputRemoveRole(
+		inter: Subcommand.ChatInputCommandInteraction<"cached">,
+	) {
+		const logger = this.getCommandLogger(inter);
+		const role = inter.options.getRole("role", true);
+		const replacementRole = inter.options.getRole("replacement_role", false);
 
-        if (replacementRole?.managed) {
-            inter.reply(`${replacementRole} is managed by an external service and cannot be used.`);
-            return;
-        }
+		if (replacementRole?.managed) {
+			inter.reply(
+				`${replacementRole} is managed by an external service and cannot be used.`,
+			);
+			return;
+		}
 
-        const [settings, error] = await this.getSettings(inter.guildId);
-        if (error) {
-            inter.reply({
-                content: "An error occurred while retrieving your settings.",
-                ephemeral: true
-            });
-            logger.error("An error occurred while retrieving your settings.", error);
-            return;
-        }
-        if (isNullish(settings)) {
-            const mention = slashCommandMention(this.name, verify.commands.chat.subcommands.enable.name, this.hints().getChatId());
-            inter.reply(`Verification is not enabled. Enable it with ${mention}.`);
-            return;
-        }
+		const [settings, error] = await this.getSettings(inter.guildId);
+		if (error) {
+			inter.reply({
+				content: "An error occurred while retrieving your settings.",
+				ephemeral: true,
+			});
+			logger.error("An error occurred while retrieving your settings.", error);
+			return;
+		}
+		if (isNullish(settings)) {
+			const mention = slashCommandMention(
+				this.name,
+				verify.commands.chat.subcommands.enable.name,
+				this.hints().getChatId(),
+			);
+			inter.reply(`Verification is not enabled. Enable it with ${mention}.`);
+			return;
+		}
 
-        const included = settings.roles.find((r) => r === role.id);
-        if (!included) {
-            inter.reply(`${role} is already not included in the list of roles.`);
-            return;
-        }
+		const included = settings.roles.find((r) => r === role.id);
+		if (!included) {
+			inter.reply(`${role} is already not included in the list of roles.`);
+			return;
+		}
 
-        const doReplace = !isNullish(replacementRole);
-        if (settings.roles.length === 1 && !doReplace) {
-            const mention = slashCommandMention(this.name, verify.commands.chat.subcommands.add_role.name, this.hints().getChatId());
-            inter.reply(`A minimum of one role is required. To remove this role, add another in its place using ${mention}, or use the this command's 'replacement_role' option.`);
-            return;
-        }
+		const doReplace = !isNullish(replacementRole);
+		if (settings.roles.length === 1 && !doReplace) {
+			const mention = slashCommandMention(
+				this.name,
+				verify.commands.chat.subcommands.add_role.name,
+				this.hints().getChatId(),
+			);
+			inter.reply(
+				`A minimum of one role is required. To remove this role, add another in its place using ${mention}, or use the this command's 'replacement_role' option.`,
+			);
+			return;
+		}
 
-        if (doReplace && settings.roles.includes(replacementRole.id)) {
-            inter.reply(`${replacementRole} cannot be used as a replacement role because it is already included in the list of verification roles.`);
-            return;
-        }
+		if (doReplace && settings.roles.includes(replacementRole.id)) {
+			inter.reply(
+				`${replacementRole} cannot be used as a replacement role because it is already included in the list of verification roles.`,
+			);
+			return;
+		}
 
-        let replaceText = "";
-        if (doReplace) {
-            replaceText = ` (replaced with ${replacementRole})`;
-        }
+		let replaceText = "";
+		if (doReplace) {
+			replaceText = ` (replaced with ${replacementRole})`;
+		}
 
-        try {
-            await this.db
-                .update(verifySettings)
-                .set({
-                    roles: doReplace ? arrayReplace(verifySettings.roles, role.id, replacementRole!.id) : arrayRemove(verifySettings.roles, role.id)
-                })
-                .where(eq(verifySettings.gid, inter.guildId));
-            inter.reply(`Removed ${role} from verification roles${replaceText}.`);
-        } catch (error) {
-            inter.reply({
-                content: `An error occurred while trying to remove ${role} to verification roles.`,
-                ephemeral: true
-            });
-            logger.error(`An error occurred while trying to remove ${role.name} to verification roles.`, error);
-        }
-    }
+		try {
+			await this.db
+				.update(verifySettings)
+				.set({
+					roles: doReplace
+						? arrayReplace(verifySettings.roles, role.id, replacementRole!.id)
+						: arrayRemove(verifySettings.roles, role.id),
+				})
+				.where(eq(verifySettings.gid, inter.guildId));
+			inter.reply(`Removed ${role} from verification roles${replaceText}.`);
+		} catch (error) {
+			inter.reply({
+				content: `An error occurred while trying to remove ${role} to verification roles.`,
+				ephemeral: true,
+			});
+			logger.error(
+				`An error occurred while trying to remove ${role.name} to verification roles.`,
+				error,
+			);
+		}
+	}
 
-    public async chatInputEdit(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
-        const type = inter.options.getString("type", false);
-        const channel = inter.options.getChannel("new_user_channel", false);
-        const createGreeting = inter.options.getBoolean("create_greeting", false);
-        if (isNullish(type) && isNullish(channel) && isNullish(createGreeting)) {
-            inter.reply("No options specified, exiting.");
-            return;
-        }
+	public async chatInputEdit(
+		inter: Subcommand.ChatInputCommandInteraction<"cached">,
+	) {
+		const type = inter.options.getString("type", false);
+		const channel = inter.options.getChannel("new_user_channel", false);
+		const createGreeting = inter.options.getBoolean("create_greeting", false);
+		if (isNullish(type) && isNullish(channel) && isNullish(createGreeting)) {
+			inter.reply("No options specified, exiting.");
+			return;
+		}
 
-        const logger = this.getCommandLogger(inter);
-        const [settings, error] = await this.getSettings(inter.guildId);
-        if (error) {
-            inter.reply({
-                content: "An error occurred while retrieving your settings.",
-                ephemeral: true
-            });
-            logger.error("An error occurred while retrieving your settings.", error);
-            return;
-        }
-        if (isNullish(settings)) {
-            const mention = slashCommandMention(this.name, verify.commands.chat.subcommands.enable.name, this.hints().getChatId());
-            inter.reply(`Verification is not enabled. Enable it with ${mention}.`);
-            return;
-        }
+		const logger = this.getCommandLogger(inter);
+		const [settings, error] = await this.getSettings(inter.guildId);
+		if (error) {
+			inter.reply({
+				content: "An error occurred while retrieving your settings.",
+				ephemeral: true,
+			});
+			logger.error("An error occurred while retrieving your settings.", error);
+			return;
+		}
+		if (isNullish(settings)) {
+			const mention = slashCommandMention(
+				this.name,
+				verify.commands.chat.subcommands.enable.name,
+				this.hints().getChatId(),
+			);
+			inter.reply(`Verification is not enabled. Enable it with ${mention}.`);
+			return;
+		}
 
-        if (isNullish(type) && !isNullish(channel)) {
-            inter.reply("You must specify the verification type as 'message' in order to set a new users channel");
-            return;
-        }
+		if (isNullish(type) && !isNullish(channel)) {
+			inter.reply(
+				"You must specify the verification type as 'message' in order to set a new users channel",
+			);
+			return;
+		}
 
-        const resolvedType = type ?? settings.type;
-        const resolvedChannel = isNullish(channel) ? settings.new_user_channel : channel.id;
-        const resolvedGreeting = createGreeting ?? settings.create_greeting;
+		const resolvedType = type ?? settings.type;
+		const resolvedChannel = isNullish(channel)
+			? settings.new_user_channel
+			: channel.id;
+		const resolvedGreeting = createGreeting ?? settings.create_greeting;
 
-        if (resolvedType === "message" && isNullish(resolvedChannel)) {
-            inter.reply("You must specify a new users channel for message verification");
-            return;
-        }
+		if (resolvedType === "message" && isNullish(resolvedChannel)) {
+			inter.reply(
+				"You must specify a new users channel for message verification",
+			);
+			return;
+		}
 
-        try {
-            await this.db
-                .update(verifySettings)
-                .set({
-                    type: resolvedType,
-                    new_user_channel: resolvedType === "message" ? resolvedChannel : null,
-                    create_greeting: resolvedGreeting
-                })
-                .where(eq(verifySettings.gid, inter.guildId));
-            inter.reply("Successfully updated verification settings.");
-        } catch (error) {
-            inter.reply({
-                content: "An error occurred while editing your verification settings.",
-                ephemeral: true
-            });
-            logger.error("An error occurred while editing your verification settings.", error);
-        }
-    }
+		try {
+			await this.db
+				.update(verifySettings)
+				.set({
+					type: resolvedType,
+					new_user_channel: resolvedType === "message" ? resolvedChannel : null,
+					create_greeting: resolvedGreeting,
+				})
+				.where(eq(verifySettings.gid, inter.guildId));
+			inter.reply("Successfully updated verification settings.");
+		} catch (error) {
+			inter.reply({
+				content: "An error occurred while editing your verification settings.",
+				ephemeral: true,
+			});
+			logger.error(
+				"An error occurred while editing your verification settings.",
+				error,
+			);
+		}
+	}
 
-    public async chatInputRescan(inter: Subcommand.ChatInputCommandInteraction<"cached">) {
-        const logger = this.getCommandLogger(inter);
-        await inter.deferReply({ ephemeral: true });
+	public async chatInputRescan(
+		inter: Subcommand.ChatInputCommandInteraction<"cached">,
+	) {
+		const logger = this.getCommandLogger(inter);
+		await inter.deferReply({ ephemeral: true });
 
-        const [settings, settingsError] = await this.getSettings(inter.guildId);
-        if (settingsError) {
-            await inter.editReply("An error occurred while retrieving settings.");
-            logger.error("An error occurred while retrieving settings.", settingsError);
-            return;
-        }
-        if (isNullish(settings)) {
-            const mention = slashCommandMention(this.name, verify.commands.chat.subcommands.enable.name, this.hints().getChatId());
-            await inter.editReply(`Verification is not enabled. Enable it with ${mention}.`);
-            return;
-        }
-        if (settings.type !== "message") {
-            await inter.editReply("Rescanning is only supported for message verification.");
-            return;
-        }
+		const [settings, settingsError] = await this.getSettings(inter.guildId);
+		if (settingsError) {
+			await inter.editReply("An error occurred while retrieving settings.");
+			logger.error(
+				"An error occurred while retrieving settings.",
+				settingsError,
+			);
+			return;
+		}
+		if (isNullish(settings)) {
+			const mention = slashCommandMention(
+				this.name,
+				verify.commands.chat.subcommands.enable.name,
+				this.hints().getChatId(),
+			);
+			await inter.editReply(
+				`Verification is not enabled. Enable it with ${mention}.`,
+			);
+			return;
+		}
+		if (settings.type !== "message") {
+			await inter.editReply(
+				"Rescanning is only supported for message verification.",
+			);
+			return;
+		}
 
-        if (isNullish(settings.new_user_channel)) {
-            inter.reply("Encountered inconsistent state...how did you get here...exiting.");
-            return;
-        }
+		if (isNullish(settings.new_user_channel)) {
+			inter.reply(
+				"Encountered inconsistent state...how did you get here...exiting.",
+			);
+			return;
+		}
 
-        const [channel, channelError] = await trycatch(() => this.container.client.channels.fetch(settings.new_user_channel!));
-        if (channel === null || channelError !== null) {
-            await inter.editReply(`${channelMention(settings.new_user_channel)} was not found, check that the channel exists, then try again`);
-            return;
-        }
+		const [channel, channelError] = await trycatch(() =>
+			this.container.client.channels.fetch(settings.new_user_channel!),
+		);
+		if (channel === null || channelError !== null) {
+			await inter.editReply(
+				`${channelMention(settings.new_user_channel)} was not found, check that the channel exists, then try again`,
+			);
+			return;
+		}
 
-        if (channel.type !== ChannelType.GuildText) {
-            const mention = slashCommandMention(this.name, verify.commands.chat.subcommands.edit.name, this.hints().getChatId());
-            await inter.editReply(`Rescanning is only supported on text channels. Change your channel settings or update your new user channel with ${mention}, then try again`);
-            return;
-        }
+		if (channel.type !== ChannelType.GuildText) {
+			const mention = slashCommandMention(
+				this.name,
+				verify.commands.chat.subcommands.edit.name,
+				this.hints().getChatId(),
+			);
+			await inter.editReply(
+				`Rescanning is only supported on text channels. Change your channel settings or update your new user channel with ${mention}, then try again`,
+			);
+			return;
+		}
 
-        const [users, userError] = await trycatch(() => this.db.query.verifyEntry.findMany({ where: eq(verifyEntry.gid, inter.guildId) }));
-        if (userError !== null) {
-            await inter.editReply("An error occurred while retreiving existing users, please try again later.");
-            return;
-        }
+		const [users, userError] = await trycatch(() =>
+			this.db.query.verifyEntry.findMany({
+				where: eq(verifyEntry.gid, inter.guildId),
+			}),
+		);
+		if (userError !== null) {
+			await inter.editReply(
+				"An error occurred while retreiving existing users, please try again later.",
+			);
+			return;
+		}
 
-        const history = await channel.messages.fetch({ limit: 100 });
-        const messages = Array.from(
-            history
-                .sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp)
-                .filter((msg, key, coll) => {
-                    const isUser = !msg.author.bot;
-                    const nickMatch = msg.content.match(VERIFY_REGEX) !== null;
-                    const noExistingEntry = users.find((e) => e.uid === msg.author.id) === undefined;
-                    const unique = key === coll.find((m) => m.author.id === msg.author.id)?.id;
+		const history = await channel.messages.fetch({ limit: 100 });
+		const messages = Array.from(
+			history
+				.sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp)
+				.filter((msg, key, coll) => {
+					const isUser = !msg.author.bot;
+					const nickMatch = msg.content.match(VERIFY_REGEX) !== null;
+					const noExistingEntry =
+						users.find((e) => e.uid === msg.author.id) === undefined;
+					const unique =
+						key === coll.find((m) => m.author.id === msg.author.id)?.id;
 
-                    return isUser && nickMatch && noExistingEntry && unique;
-                })
-                .values()
-        );
+					return isUser && nickMatch && noExistingEntry && unique;
+				})
+				.values(),
+		);
 
-        const fetchedMembers = await Promise.all(
-            messages.map(async (message) => {
-                const [member] = await trycatch(() => message.guild?.members.fetch(message.author.id));
-                return { member, message };
-            })
-        );
-        const scannedUsers = fetchedMembers
-            .filter((fetched): fetched is { member: GuildMember; message: Message<true> } => {
-                if (fetched.member === null) {
-                    return false;
-                }
-                return !fetched.member.roles.cache.hasAll(...settings.roles);
-            })
-            .map<VerifyUser>(({ message }) => {
-                const match = message.content.match(VERIFY_REGEX)!;
-                const nick = VerifyRequestListener.formatNickname(match.groups!.nick, match.groups!.team);
-                return {
-                    gid: inter.guildId,
-                    uid: message.author.id,
-                    nick
-                };
-            });
+		const fetchedMembers = await Promise.all(
+			messages.map(async (message) => {
+				const [member] = await trycatch(() =>
+					message.guild?.members.fetch(message.author.id),
+				);
+				return { member, message };
+			}),
+		);
+		const scannedUsers = fetchedMembers
+			.filter(
+				(
+					fetched,
+				): fetched is { member: GuildMember; message: Message<true> } => {
+					if (fetched.member === null) {
+						return false;
+					}
+					return !fetched.member.roles.cache.hasAll(...settings.roles);
+				},
+			)
+			.map<VerifyUser>(({ message }) => {
+				const match = message.content.match(VERIFY_REGEX)!;
+				const nick = VerifyRequestListener.formatNickname(
+					match.groups!.nick,
+					match.groups!.team,
+				);
+				return {
+					gid: inter.guildId,
+					uid: message.author.id,
+					nick,
+				};
+			});
 
-        if (scannedUsers.length === 0) {
-            await inter.editReply("Verification list is already up to date.");
-            return;
-        }
+		if (scannedUsers.length === 0) {
+			await inter.editReply("Verification list is already up to date.");
+			return;
+		}
 
-        const [, error] = await trycatch(() => this.db.insert(verifyEntry).values(scannedUsers).onConflictDoNothing());
-        if (error) {
-            await inter.editReply(`An error occurred while rescanning ${channelMention(settings.new_user_channel!)}, please try again later.`);
-            return;
-        }
+		const [, error] = await trycatch(() =>
+			this.db.insert(verifyEntry).values(scannedUsers).onConflictDoNothing(),
+		);
+		if (error) {
+			await inter.editReply(
+				`An error occurred while rescanning ${channelMention(settings.new_user_channel!)}, please try again later.`,
+			);
+			return;
+		}
 
-        await inter.editReply(`Rescan complete, verification list updated (${scannedUsers.length} ${pluralize("user", scannedUsers.length)}).`);
-    }
+		await inter.editReply(
+			`Rescan complete, verification list updated (${scannedUsers.length} ${pluralize("user", scannedUsers.length)}).`,
+		);
+	}
 
-    private async onVerifySubmit(settings: VerifySettings, users: VerifyUser[], inter: ButtonInteraction<"cached">) {
-        const reply = await inter.followUp("Processing verification list, please wait.");
+	private async onVerifySubmit(
+		settings: VerifySettings,
+		users: VerifyUser[],
+		inter: ButtonInteraction<"cached">,
+	) {
+		const reply = await inter.followUp(
+			"Processing verification list, please wait.",
+		);
 
-        const handleUserVerify = async (user: VerifyUser) => {
-            try {
-                await inter.guild.members.edit(user.uid, {
-                    roles: settings.roles,
-                    nick: user.nick,
-                    reason: `Verified by ${inter.user.tag}`
-                });
-                return user;
-            } catch (e) {
-                return undefined;
-            }
-        };
+		const handleUserVerify = async (user: VerifyUser) => {
+			try {
+				await inter.guild.members.edit(user.uid, {
+					roles: settings.roles,
+					nick: user.nick,
+					reason: `Verified by ${inter.user.tag}`,
+				});
+				return user;
+			} catch (e) {
+				return undefined;
+			}
+		};
 
-        const promises = await Promise.all(users.map(handleUserVerify));
-        const verified = promises.filter((u): u is VerifyUser => u !== undefined);
-        const failedCount = users.length - verified.length;
+		const promises = await Promise.all(users.map(handleUserVerify));
+		const verified = promises.filter((u): u is VerifyUser => u !== undefined);
+		const failedCount = users.length - verified.length;
 
-        let response = `Verified ${verified.length} ${pluralize("user", verified.length)}.`;
-        if (failedCount !== 0) {
-            response += ` Failed to verify ${failedCount} ${pluralize("user", failedCount)}.`;
-        }
+		let response = `Verified ${verified.length} ${pluralize("user", verified.length)}.`;
+		if (failedCount !== 0) {
+			response += ` Failed to verify ${failedCount} ${pluralize("user", failedCount)}.`;
+		}
 
-        trycatch(() => {
-            return this.db.delete(verifyEntry).where(eq(verifyEntry.gid, inter.guildId));
-        });
-        await reply.edit(response);
+		trycatch(() => {
+			return this.db
+				.delete(verifyEntry)
+				.where(eq(verifyEntry.gid, inter.guildId));
+		});
+		await reply.edit(response);
 
-        if (settings.create_greeting && verified.length > 0) {
-            const mentions = verified.map((u) => userMention(u.uid)).join(", ");
-            const channel = (await inter.guild.channels.fetch(inter.channelId)) as TextChannel;
-            trycatch(() => channel.send(inlineCode(`Welcome ${mentions}!`)));
-        }
-    }
+		if (settings.create_greeting && verified.length > 0) {
+			const mentions = verified.map((u) => userMention(u.uid)).join(", ");
+			const channel = (await inter.guild.channels.fetch(
+				inter.channelId,
+			)) as TextChannel;
+			trycatch(() => channel.send(inlineCode(`Welcome ${mentions}!`)));
+		}
+	}
 
-    private async getSettings(guildId: string) {
-        return await trycatch(() =>
-            this.db.query.verifySettings.findFirst({
-                where: eq(verifySettings.gid, guildId)
-            })
-        );
-    }
+	private async getSettings(guildId: string) {
+		return await trycatch(() =>
+			this.db.query.verifySettings.findFirst({
+				where: eq(verifySettings.gid, guildId),
+			}),
+		);
+	}
 }
