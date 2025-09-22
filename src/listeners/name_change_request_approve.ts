@@ -1,6 +1,6 @@
 import { ApplyOptions } from "@sapphire/decorators";
 import { Events, Listener } from "@sapphire/framework";
-import { ChannelType, MessageReaction, User } from "discord.js";
+import { ChannelType, MessageReaction, User, userMention } from "discord.js";
 import { eq } from "drizzle-orm";
 import { nameChangeRequestSettings } from "../db/schema";
 import { AugmentedListener } from "../utils/bot";
@@ -19,20 +19,20 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
             return;
         }
 
+        if (reaction.partial) {
+            logger.info("Reaction is partial, fetching latest");
+            const [, error] = await trycatch(() => reaction.fetch());
+            if (error) {
+                logger.error({ error }, "Unable to fetch partial reaction, exiting.");
+            }
+        }
         const message = reaction.message.partial ? await reaction.message.fetch() : reaction.message;
         if (![ChannelType.PublicThread, ChannelType.GuildText].includes(message.channel.type)) {
             logger.info("Message not in text channel or public thread, exiting.");
             return;
         }
 
-        if (message.channel.isThread()) {
-            message.channel.members.fetch()
-        }
-
         const [targetMember, targetMemberError] = await trycatch(async () => {
-            if (message.channel.isThread()) {
-                return message.channel.guildMembers.get(user.id);
-            }
             return message.member?.partial ? await message.member.fetch() : message.member
         });
         if (isNullish(targetMember)) {
@@ -72,9 +72,9 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         logger.info("Processing event.");
 
         if (reaction.emoji.name === "✅") {
-            logger.info("Attempting to approve name change request.");
+            logger.info(`Attempting to approve name change request for ${targetMember.displayName}.`);
             const [, error] = await trycatch(async () => {
-                await targetMember.setNickname(message.content);
+                await targetMember.edit({ nick: message.content });
                 await trycatch(() => message.reactions.cache.get("❌")!.remove());
             });
             if (error) {
