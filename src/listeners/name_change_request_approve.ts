@@ -41,12 +41,12 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
             return;
         }
 
-        if (reaction.emoji.toString() === "✅") {
+        if (reaction.emoji.name === "✅") {
             await trycatch(async () => {
                 await message.member!.setNickname(message.content)
                 await message.reactions.removeAll();
             });
-        } else if (reaction.emoji.toString() === "❌") {
+        } else if (reaction.emoji.name === "❌") {
             await trycatch(() => message.reactions.removeAll())
         }
     }
