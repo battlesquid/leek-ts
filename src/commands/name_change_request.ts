@@ -13,7 +13,7 @@ import { AugmentedSubcommand, chatInputCommand, CommandHints } from "../utils/bo
     requiredUserPermissions: name_change_request.permissions,
     requiredClientPermissions: ["ManageNicknames", "AddReactions"]
 })
-export class LogsCommand extends AugmentedSubcommand {
+export class NameChangeRequestCommand extends AugmentedSubcommand {
     hints() {
         return new CommandHints({
             chat: {

@@ -114,7 +114,7 @@ export abstract class AugmentedListener<
 		return this.container.drizzle;
 	}
 
-	getEventLogger(event: string) {
-		return (this.container.logger as PinoLoggerAdapter).child({ event, rawEvent: this.event.toString() })
+	getEventLogger(event: string, guild: string) {
+		return (this.container.logger as PinoLoggerAdapter).child({ event, guild, rawEvent: this.event.toString() })
 	}
 }

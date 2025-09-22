@@ -12,7 +12,7 @@ import name_change_request from "../interactions/name_change_request";
 })
 export class NameChangeRequestApproveListener extends AugmentedListener<"messageReactionAdd"> {
     async run(reaction: MessageReaction, user: User) {
-        const logger = this.getEventLogger("NameChangeRequestApprove");
+        const logger = this.getEventLogger("NameChangeRequestApprove", reaction.message.guildId ?? "");
 
         if (user.bot) {
             return;
@@ -20,6 +20,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
 
         const message = reaction.message.partial ? await reaction.message.fetch() : reaction.message;
         if (!message.guild || !message.member) {
+            logger.info("Unable to resolve guild/member, exiting.");
             return;
         }
 
@@ -30,6 +31,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         }
 
         if (!reactionMember.permissions.has(name_change_request.permissions)) {
+            logger.info("Reacting member does not have permissions, exiting.");
             return;
         }
 
@@ -41,6 +43,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
 
         const canProcessRequest = error === null && message.channelId === settings?.channel;
         if (!canProcessRequest) {
+            logger.info("Unable to process event");
             if (error) {
                 logger.error({ error });
             }
