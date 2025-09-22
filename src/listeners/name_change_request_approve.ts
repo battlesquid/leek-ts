@@ -25,7 +25,16 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
             return;
         }
 
-        const [targetMember, targetMemberError] = await trycatch(async () => message.member?.partial ? await message.member.fetch() : message.member);
+        if (message.channel.isThread()) {
+            message.channel.members.fetch()
+        }
+
+        const [targetMember, targetMemberError] = await trycatch(async () => {
+            if (message.channel.isThread()) {
+                return message.channel.guildMembers.get(user.id);
+            }
+            return message.member?.partial ? await message.member.fetch() : message.member
+        });
         if (isNullish(targetMember)) {
             logger.info("Unable to resolve target member, exiting");
             if (targetMemberError) {
