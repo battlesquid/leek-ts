@@ -33,7 +33,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         }
 
         const [targetMember, targetMemberError] = await trycatch(async () => {
-            return message.member?.partial ? await message.member.fetch() : message.member
+            return message.member?.partial ? await message.member.fetch(true) : message.member
         });
         if (isNullish(targetMember)) {
             logger.info("Unable to resolve target member, exiting");
