@@ -47,6 +47,9 @@ export class LogsCommand extends AugmentedSubcommand {
                     target: nameChangeRequestSettings.gid,
                     set: { channel: channel.id }
                 });
+                if (channel.type === ChannelType.PublicThread) {
+                    await channel.join();
+                }
             inter.reply(`Enabled name change requests on ${channel}.`);
         } catch (error) {
             inter.reply({
