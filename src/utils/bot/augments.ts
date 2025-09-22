@@ -8,6 +8,7 @@ import type {
 import { getenv } from "../../config";
 import { CommandLogger } from "./command_logger";
 import { slashCommandMention } from "./formatters";
+import { PinoLoggerAdapter } from "./pino_logger_adapter";
 
 export interface CommandHint {
 	development: Snowflake;
@@ -83,7 +84,7 @@ export abstract class AugmentedSubcommand extends Subcommand {
 				id = hints.getUserId();
 				break;
 			default:
-				((_: never) => {})(type);
+				((_: never) => { })(type);
 				break;
 		}
 		return slashCommandMention(this.name, subcommand, id);
@@ -111,5 +112,9 @@ export abstract class AugmentedListener<
 > extends Listener<T> {
 	get db() {
 		return this.container.drizzle;
+	}
+
+	getEventLogger(event: string) {
+		return (this.container.logger as PinoLoggerAdapter).child({ event, rawEvent: this.event.toString() })
 	}
 }

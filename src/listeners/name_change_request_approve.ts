@@ -12,6 +12,8 @@ import name_change_request from "../interactions/name_change_request";
 })
 export class NameChangeRequestApproveListener extends AugmentedListener<"messageReactionAdd"> {
     async run(reaction: MessageReaction, user: User) {
+        const logger = this.getEventLogger("NameChangeRequestApprove");
+
         if (user.bot) {
             return;
         }
@@ -23,6 +25,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
 
         const [reactionMember, reactionMemberError] = await trycatch(() => message.guild!.members.fetch(user.id));
         if (reactionMemberError) {
+            logger.error({ error: reactionMemberError })
             return;
         }
 
@@ -38,16 +41,33 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
 
         const canProcessRequest = error === null && message.channelId === settings?.channel;
         if (!canProcessRequest) {
+            if (error) {
+                logger.error({ error });
+            }
             return;
         }
 
+        logger.info("Processing event.");
+
         if (reaction.emoji.name === "✅") {
-            await trycatch(async () => {
+            logger.info("Attempting to approve name change request.");
+            const [, error] = await trycatch(async () => {
                 await message.member!.setNickname(message.content);
                 await trycatch(() => message.reactions.cache.get("❌")!.remove());
             });
+            if (error) {
+                logger.error({ error }, "Unable to approve name change request.");
+                return;
+            }
+            logger.info("Successfully approved name change request.");
         } else if (reaction.emoji.name === "❌") {
-            await trycatch(() => message.reactions.cache.get("✅")!.remove());
+            logger.info("Attempting to reject name change request.");
+            const [, error] = await trycatch(() => message.reactions.cache.get("✅")!.remove());
+            if (error) {
+                logger.error({ error }, "Unable to reject name change request.");
+                return;
+            }
+            logger.info("Successfully rejected name change request.");
         }
     }
 }
