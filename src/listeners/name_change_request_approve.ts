@@ -19,18 +19,19 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         }
 
         const message = reaction.message.partial ? await reaction.message.fetch() : reaction.message;
-        if (!message.guild || !message.member) {
+        const targetMember = message.member?.partial ? await message.member.fetch() : message.member;
+        if (!message.guild || !targetMember) {
             logger.info("Unable to resolve guild/member, exiting.");
             return;
         }
 
-        const [reactionMember, reactionMemberError] = await trycatch(() => message.guild!.members.fetch(user.id));
-        if (reactionMemberError) {
-            logger.error({ error: reactionMemberError })
+        const [initiator, initiatorError] = await trycatch(() => message.guild!.members.fetch(user.id));
+        if (initiatorError) {
+            logger.error({ error: initiatorError })
             return;
         }
 
-        if (!reactionMember.permissions.has(name_change_request.permissions)) {
+        if (!initiator.permissions.has(name_change_request.permissions)) {
             logger.info("Reacting member does not have permissions, exiting.");
             return;
         }
@@ -55,7 +56,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         if (reaction.emoji.name === "✅") {
             logger.info("Attempting to approve name change request.");
             const [, error] = await trycatch(async () => {
-                await message.member!.setNickname(message.content);
+                await targetMember.setNickname(message.content);
                 await trycatch(() => message.reactions.cache.get("❌")!.remove());
             });
             if (error) {
