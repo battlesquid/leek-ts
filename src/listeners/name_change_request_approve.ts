@@ -33,6 +33,9 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         }
 
         const [targetMember, targetMemberError] = await trycatch(async () => {
+            if (message.channel.isThread()) {
+                return message.channel.guildMembers.get(message.author.id)
+            }
             return message.member?.partial ? await message.member.fetch(true) : message.member
         });
         if (isNullish(targetMember)) {
