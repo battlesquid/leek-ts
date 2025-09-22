@@ -15,7 +15,8 @@
 		"clean:all": "pnpm clean && rm -rf node_modules",
 		"neat": "biome check .",
 		"neat:fix": "biome check . --write",
-		"run_migrate": "node dist/migrate.js"
+		"migrate": "infisical run --env=prod -- node dist/migrate.js",
+		"migrate:dev": "infisical run -- node dist/migrate.js"
 	},
 	"dependencies": {
 		"@sapphire/decorators": "^6.1.0",
