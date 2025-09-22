@@ -1,14 +1,15 @@
 import { ApplyOptions } from "@sapphire/decorators";
 import { Events, Listener } from "@sapphire/framework";
-import { MessageReaction, User } from "discord.js";
+import { ChannelType, MessageReaction, User } from "discord.js";
 import { eq } from "drizzle-orm";
 import { nameChangeRequestSettings } from "../db/schema";
 import { AugmentedListener } from "../utils/bot";
 import { trycatch } from "../utils/general";
 import name_change_request from "../interactions/name_change_request";
+import { isNullish } from "@sapphire/utilities";
 
 @ApplyOptions<Listener.Options>({
-    event: Events.MessageReactionAdd
+    event: Events.MessageReactionAdd,
 })
 export class NameChangeRequestApproveListener extends AugmentedListener<"messageReactionAdd"> {
     async run(reaction: MessageReaction, user: User) {
@@ -19,9 +20,17 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         }
 
         const message = reaction.message.partial ? await reaction.message.fetch() : reaction.message;
-        const targetMember = message.member?.partial ? await message.member.fetch() : message.member;
-        if (!message.guild || !targetMember) {
-            logger.info("Unable to resolve guild/member, exiting.");
+        if (![ChannelType.PublicThread, ChannelType.GuildText].includes(message.channel.type)) {
+            logger.info("Message not in text channel or public thread, exiting.");
+            return;
+        }
+
+        const [targetMember, targetMemberError] = await trycatch(async () => message.member?.partial ? await message.member.fetch() : message.member);
+        if (isNullish(targetMember)) {
+            logger.info("Unable to resolve target member, exiting");
+            if (targetMemberError) {
+                logger.error({ error: targetMemberError }, "Unable to resolve target member, exiting");
+            }
             return;
         }
 
