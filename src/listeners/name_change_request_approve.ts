@@ -17,14 +17,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         }
 
         const message = reaction.message.partial ? await reaction.message.fetch() : reaction.message;
-
-        if (!message.guild) {
-            return;
-        }
-        if (message.embeds.length === 0) {
-            return;
-        }
-        if (!message.member) {
+        if (!message.guild || !message.member) {
             return;
         }
 
@@ -48,8 +41,13 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
             return;
         }
 
-        if (reaction.emoji.toString() === "✅") {
-            await trycatch(() => message.member!.setNickname(message.content));
+        if (reaction.emoji.name === "✅") {
+            await trycatch(async () => {
+                await message.member!.setNickname(message.content)
+                await message.reactions.removeAll();
+            });
+        } else if (reaction.emoji.name === "❌") {
+            await trycatch(() => message.reactions.removeAll())
         }
     }
 }
