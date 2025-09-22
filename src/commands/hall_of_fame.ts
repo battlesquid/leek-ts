@@ -29,7 +29,7 @@ import {
 	timestring,
 	YOUTUBE_REGEX,
 } from "../utils/bot";
-import { pluralize, trycatch } from "../utils/general";
+import { plural, trycatch } from "../utils/general";
 
 @ApplyOptions<Subcommand.Options>({
 	name: hall_of_fame.commands.chat.base.name,
@@ -199,7 +199,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
 		);
 		const warning =
 			missing.length > 0
-				? `Unable to retreive ${missing.length} ${pluralize("hall", missing.length)}.\n`
+				? `Unable to retreive ${missing.length} ${plural("hall", missing.length)}.\n`
 				: "";
 
 		const options = existing.map(({ channel }) => {

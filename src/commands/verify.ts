@@ -40,7 +40,7 @@ import {
 	slashCommandMention,
 	VERIFY_REGEX,
 } from "../utils/bot";
-import { pluralize, trycatch } from "../utils/general";
+import { plural, trycatch } from "../utils/general";
 
 @ApplyOptions<Subcommand.Options>({
 	name: verify.commands.chat.base.name,
@@ -677,7 +677,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 		}
 
 		await inter.editReply(
-			`Rescan complete, verification list updated (${scannedUsers.length} ${pluralize("user", scannedUsers.length)}).`,
+			`Rescan complete, verification list updated (${scannedUsers.length} ${plural("user", scannedUsers.length)}).`,
 		);
 	}
 
@@ -707,9 +707,9 @@ export class VerifyCommand extends AugmentedSubcommand {
 		const verified = promises.filter((u): u is VerifyUser => u !== undefined);
 		const failedCount = users.length - verified.length;
 
-		let response = `Verified ${verified.length} ${pluralize("user", verified.length)}.`;
+		let response = `Verified ${verified.length} ${plural("user", verified.length)}.`;
 		if (failedCount !== 0) {
-			response += ` Failed to verify ${failedCount} ${pluralize("user", failedCount)}.`;
+			response += ` Failed to verify ${failedCount} ${plural("user", failedCount)}.`;
 		}
 
 		trycatch(() => {

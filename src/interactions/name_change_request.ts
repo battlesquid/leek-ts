@@ -1,8 +1,4 @@
-import {
-    SlashCommandBuilder,
-    SlashCommandSubcommandBuilder,
-} from "@discordjs/builders";
-import { ChannelType, PermissionFlagsBits } from "discord.js";
+import { ChannelType, PermissionFlagsBits, SlashCommandBuilder, SlashCommandSubcommandBuilder } from "discord.js";
 import { CommandBundle } from ".";
 import { combinePermissions } from "../utils/bot/bitwise";
 

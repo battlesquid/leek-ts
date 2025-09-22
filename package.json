@@ -8,17 +8,14 @@
 	"scripts": {
 		"prepare": "husky",
 		"start": "node dist/index.js",
-		"dev": "pnpm start | pino-pretty",
+		"dev": "infisical run -- pnpm start | pino-pretty",
 		"build": "tsc",
 		"build:clean": "pnpm clean && pnpm build",
 		"clean": "rm -rf dist",
 		"clean:all": "pnpm clean && rm -rf node_modules",
 		"neat": "biome check .",
 		"neat:fix": "biome check . --write",
-		"run_migrate": "node dist/migrate.js",
-		"vault:remove-previous": "rm -rf .env.previous .env.production.previous",
-		"vault:pull": "dotenv-vault pull && dotenv-vault pull production && pnpm vault:remove-previous",
-		"vault:push": "dotenv-vault push && dotenv-vault push production && pnpm vault:pull"
+		"run_migrate": "node dist/migrate.js"
 	},
 	"dependencies": {
 		"@sapphire/decorators": "^6.1.0",
