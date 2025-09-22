@@ -9,7 +9,7 @@ import { trycatch } from "../utils/general";
 @ApplyOptions<Listener.Options>({
     event: Events.MessageCreate
 })
-export class VerifyRequestListener extends AugmentedListener<"messageCreate"> {
+export class NameChangeRequestListener extends AugmentedListener<"messageCreate"> {
     async run(message: Message) {
         if (!message.guildId) {
             return;
