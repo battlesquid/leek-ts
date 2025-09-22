@@ -17,14 +17,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         }
 
         const message = reaction.message.partial ? await reaction.message.fetch() : reaction.message;
-
-        if (!message.guild) {
-            return;
-        }
-        if (message.embeds.length === 0) {
-            return;
-        }
-        if (!message.member) {
+        if (!message.guild || !message.member) {
             return;
         }
 
