@@ -9,7 +9,7 @@ const enable = new SlashCommandSubcommandBuilder()
         opt
             .setName("channel")
             .setDescription("The channel to set as a name change request channel")
-            .addChannelTypes(ChannelType.GuildText)
+            .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread)
             .setRequired(true)
     );
 
