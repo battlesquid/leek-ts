@@ -10,4 +10,5 @@ import { getDatabase, getPgPool } from "./db";
 	await migrate(db, { migrationsFolder: "./drizzle" });
 	console.info("Closing pg connection");
 	await connection.end();
+    console.info("Migration complete");
 })();

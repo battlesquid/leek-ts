@@ -17,8 +17,8 @@ export class LogsCommand extends AugmentedSubcommand {
     hints() {
         return new CommandHints({
             chat: {
-                development: "",
-                production: ""
+                development: "1419751323242463256",
+                production: "1419766804502544485"
             }
         });
     }
