@@ -1,12 +1,12 @@
 import { ApplyOptions } from "@sapphire/decorators";
-import { Events, Listener } from "@sapphire/framework";
-import { ChannelType, MessageReaction, User, userMention } from "discord.js";
+import { Events, type Listener } from "@sapphire/framework";
+import { isNullish } from "@sapphire/utilities";
+import { ChannelType, type MessageReaction, type User } from "discord.js";
 import { eq } from "drizzle-orm";
 import { nameChangeRequestSettings } from "../db/schema";
+import name_change_request from "../interactions/name_change_request";
 import { AugmentedListener } from "../utils/bot";
 import { trycatch } from "../utils/general";
-import name_change_request from "../interactions/name_change_request";
-import { isNullish } from "@sapphire/utilities";
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageReactionAdd,
@@ -32,7 +32,6 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
             return;
         }
 
-        const channel = message.channel.partial ? message.channel.fetch() : message.channel;
         const [targetMember, targetMemberError] = await trycatch(async () => {
             console.log(message.author, message.channel.url, message.channel.type, message.guild !== null)
             if (message.channel.isThread()) {

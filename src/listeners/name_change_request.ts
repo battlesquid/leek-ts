@@ -1,6 +1,6 @@
 import { ApplyOptions } from "@sapphire/decorators";
-import { Events, Listener } from "@sapphire/framework";
-import { Message } from "discord.js";
+import { Events, type Listener } from "@sapphire/framework";
+import type { Message } from "discord.js";
 import { eq } from "drizzle-orm";
 import { nameChangeRequestSettings } from "../db/schema";
 import { AugmentedListener } from "../utils/bot";

@@ -1,10 +1,10 @@
 import { ApplyOptions } from "@sapphire/decorators";
-import { Subcommand } from "@sapphire/plugin-subcommands";
+import type { Subcommand } from "@sapphire/plugin-subcommands";
 import { ChannelType } from "discord.js";
 import { eq } from "drizzle-orm";
 import { nameChangeRequestSettings } from "../db/schema";
 import name_change_request from "../interactions/name_change_request";
-import { AugmentedSubcommand, chatInputCommand, CommandHints } from "../utils/bot";
+import { AugmentedSubcommand, CommandHints, chatInputCommand } from "../utils/bot";
 
 @ApplyOptions<Subcommand.Options>({
     name: name_change_request.commands.chat.base.name,
@@ -47,16 +47,16 @@ export class NameChangeRequestCommand extends AugmentedSubcommand {
                     target: nameChangeRequestSettings.gid,
                     set: { channel: channel.id }
                 });
-                if (channel.type === ChannelType.PublicThread) {
-                    await channel.join();
-                }
+            if (channel.type === ChannelType.PublicThread) {
+                await channel.join();
+            }
             inter.reply(`Enabled name change requests on ${channel}.`);
         } catch (error) {
             inter.reply({
                 content: "An error occurred while saving your settings.",
                 ephemeral: true
             });
-            logger.error("An error occurred while saving your settings.", error);
+            logger.error({ error }, "An error occurred while saving your settings.");
         }
     }
 
@@ -70,7 +70,7 @@ export class NameChangeRequestCommand extends AugmentedSubcommand {
                 content: "An error occurred while saving your settings.",
                 ephemeral: true
             });
-            logger.error("An error occurred while saving your settings.", error);
+            logger.error({ error }, "An error occurred while saving your settings.");
         }
     }
 }

@@ -1,10 +1,10 @@
 import { ApplyOptions } from "@sapphire/decorators";
 import { RoleMentionRegex } from "@sapphire/discord.js-utilities";
-import { Events, Listener } from "@sapphire/framework";
+import { Events, type Listener } from "@sapphire/framework";
 import type { MessageReaction, User } from "discord.js";
 import { ReactRolesCommand } from "../commands/reactroles";
-import { trycatch } from "../utils/general";
 import { AugmentedListener } from "../utils/bot";
+import { trycatch } from "../utils/general";
 
 @ApplyOptions<Listener.Options>({
     event: Events.MessageReactionAdd,

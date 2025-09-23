@@ -8,7 +8,7 @@ import type {
 } from "discord.js";
 import { getenv } from "../../config";
 import { slashCommandMention } from "./formatters";
-import { PinoLoggerAdapter } from "./pino_logger_adapter";
+import type { PinoLoggerAdapter } from "./pino_logger_adapter";
 
 export interface CommandHint {
     development: Snowflake;

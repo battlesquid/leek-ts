@@ -1,6 +1,6 @@
 import { ChannelType, PermissionFlagsBits, SlashCommandBuilder, SlashCommandSubcommandBuilder } from "discord.js";
-import { CommandBundle } from ".";
 import { combinePermissions } from "../utils/bot/bitwise";
+import type { CommandBundle } from ".";
 
 const enable = new SlashCommandSubcommandBuilder()
     .setName("enable")
