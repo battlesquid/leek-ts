@@ -33,7 +33,6 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
         }
 
         const [targetMember, targetMemberError] = await trycatch(async () => {
-            console.log(message.author, message.channel.url, message.channel.type, message.guild !== null)
             if (message.channel.isThread()) {
                 logger.info("Getting member from thread.");
                 return message.guild?.members.fetch(message.author.id);

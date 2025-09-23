@@ -9,6 +9,5 @@ declare module "@sapphire/pieces" {
         drizzle: NodePgDatabase<typeof schema>;
         pool: Pool;
         logger: PinoLoggerAdapter;
-        error: (err: Error | unknown, message: string) => void;
     }
 }

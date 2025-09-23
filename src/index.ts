@@ -35,9 +35,6 @@ const client = new SapphireClient({
 const main = async () => {
 	container.drizzle = await getDatabase();
 	container.pool = await getPgPool();
-	container.error = (error, message, meta?: object) => {
-		container.logger.error({ error, ...meta }, message);
-	};
 	await client.login(getenv("DISCORD_TOKEN"));
 };
 
