@@ -1,5 +1,5 @@
-export const emojis = {
-	LeftArrow: "950173517603819550",
-	RightArrow: "950173517515726909",
-	Checkmark: "950173517486379010",
+export const Emojis = {
+	LeftArrow: "1395137866064990289",
+	RightArrow: "1395137879155675136",
+	Checkmark: "1395137821097853038",
 };

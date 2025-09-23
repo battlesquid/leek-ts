@@ -1,5 +1,4 @@
 export * from "./augments";
-export * from "./command_logger";
 export * from "./emojis";
 export * from "./formatters";
 export * from "./moderation_log_builder";

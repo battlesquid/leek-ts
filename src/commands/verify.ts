@@ -35,7 +35,7 @@ import {
 	AugmentedSubcommand,
 	CommandHints,
 	chatInputCommand,
-	emojis,
+	Emojis,
 	PaginatedEmbed,
 	slashCommandMention,
 	VERIFY_REGEX,
@@ -297,15 +297,15 @@ export class VerifyCommand extends AugmentedSubcommand {
 			timeout: 10_000,
 			template,
 			prev: new ButtonBuilder()
-				.setEmoji(emojis.LeftArrow)
+				.setEmoji(Emojis.LeftArrow)
 				.setStyle(ButtonStyle.Primary),
 			next: new ButtonBuilder()
-				.setEmoji(emojis.RightArrow)
+				.setEmoji(Emojis.RightArrow)
 				.setStyle(ButtonStyle.Primary),
 			actions: [
 				new ButtonBuilder()
 					.setCustomId(SUBMIT_ID)
-					.setEmoji(emojis.Checkmark)
+					.setEmoji(Emojis.Checkmark)
 					.setStyle(ButtonStyle.Success),
 			],
 			itemFormatter: (user, i) =>

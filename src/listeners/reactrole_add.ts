@@ -4,73 +4,81 @@ import { Events, Listener } from "@sapphire/framework";
 import type { MessageReaction, User } from "discord.js";
 import { ReactRolesCommand } from "../commands/reactroles";
 import { trycatch } from "../utils/general";
+import { AugmentedListener } from "../utils/bot";
 
 @ApplyOptions<Listener.Options>({
-	event: Events.MessageReactionAdd,
+    event: Events.MessageReactionAdd,
 })
-export class ReactRoleAddListener extends Listener {
-	async run(reaction: MessageReaction, user: User) {
-		if (user.bot) {
-			return;
-		}
+export class ReactRoleAddListener extends AugmentedListener<typeof Events.MessageReactionAdd> {
+    async run(reaction: MessageReaction, user: User) {
+        const logger = this.getEventLogger("ReactRoleAdd", reaction.message.guildId ?? "");
 
-		const message = reaction.message.partial
-			? await reaction.message.fetch()
-			: reaction.message;
+        if (user.bot) {
+            logger.debug({ user: user.id }, "User is a bot, exiting.");
+            return;
+        }
 
-		if (!message.inGuild()) {
-			return;
-		}
-		if (message.embeds.length === 0) {
-			return;
-		}
+        const message = reaction.message.partial
+            ? await reaction.message.fetch()
+            : reaction.message;
 
-		const [embed] = message.embeds;
-		if (!ReactRolesCommand.isReactRole(embed)) {
-			return;
-		}
+        if (!message.inGuild()) {
+            logger.debug("Message not sent in guild, exiting.");
+            return;
+        }
+        if (message.embeds.length === 0) {
+            logger.debug("No embeds on message, exiting.");
+            return;
+        }
 
-		const field = embed.fields.find(
-			(f) => f.name === reaction.emoji.toString(),
-		);
-		if (!field) {
-			return;
-		}
+        const [embed] = message.embeds;
+        if (!ReactRolesCommand.isReactRole(embed)) {
+            logger.debug("Embed is not a react-role embed, exiting.");
+            return;
+        }
 
-		const match = field.value.match(RoleMentionRegex);
-		if (!match || !match.groups) {
-			return;
-		}
+        const field = embed.fields.find(
+            (f) => f.name === reaction.emoji.toString(),
+        );
+        if (!field) {
+            logger.debug(`No role found for emoji ${reaction.emoji}, exiting.`);
+            return;
+        }
 
-		const { id } = match.groups;
-		const roleID = id;
-		const [role, roleFetchError] = await trycatch(() =>
-			message.guild.roles.fetch(roleID),
-		);
-		if (roleFetchError) {
-			return;
-		}
-		if (role === null) {
-			return;
-		}
+        const match = field.value.match(RoleMentionRegex);
+        if (!match || !match.groups) {
+            logger.debug(`${field.value} does not match role regex, exiting`);
+            return;
+        }
 
-		const [member, memberFetchError] = await trycatch(() =>
-			message.guild.members.fetch(user.id),
-		);
-		if (memberFetchError) {
-			return;
-		}
+        const { id: roleId } = match.groups;
+        const [role, roleFetchError] = await trycatch(() =>
+            message.guild.roles.fetch(roleId),
+        );
+        if (roleFetchError) {
+            logger.error({ error: roleFetchError, role: roleId }, "An error occurred while fetching the role, exiting.")
+            return;
+        }
+        if (role === null) {
+            logger.warn(`No role found for role ${role}, exiting.`)
+            return;
+        }
 
-		if (!member.roles.cache.has(roleID)) {
-			return;
-		}
+        const [member, memberFetchError] = await trycatch(() =>
+            message.guild.members.fetch(user.id),
+        );
+        if (memberFetchError) {
+            logger.error({ error: memberFetchError, user: user.id }, "An error occurred while fetching the reacting member, exiting.");
+            return;
+        }
 
-		const [, addRoleError] = await trycatch(() => member.roles.add(role));
-		if (addRoleError) {
-			this.container.error(
-				addRoleError,
-				`Unable to add role to ${member.nickname}`,
-			);
-		}
-	}
+        if (member.roles.cache.has(roleId)) {
+            return;
+        }
+
+        const [, addRoleError] = await trycatch(() => member.roles.add(role));
+        if (addRoleError) {
+            logger.error({ error: addRoleError, user: user.id }, `Unable to add role to ${member.nickname}`);
+        }
+    }
 }
