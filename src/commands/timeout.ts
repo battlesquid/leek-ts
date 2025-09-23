@@ -49,7 +49,7 @@ export class TimeoutCommand extends AugmentedCommand {
 		const duration = inter.options.getString(
 			"duration",
 			true,
-		) as ms.StringValue;
+		) as string;
 		const reason =
 			inter.options.getString("reason", false) ?? "no reason provided";
 
