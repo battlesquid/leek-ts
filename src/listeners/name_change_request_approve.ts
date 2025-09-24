@@ -32,6 +32,11 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
             return;
         }
 
+        const guild = message.guild;
+        if (!guild) {
+            return;
+        }
+
         const [targetMember, targetMemberError] = await trycatch(async () => {
             if (message.channel.isThread()) {
                 logger.info("Getting member from thread.");
@@ -47,7 +52,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
             return;
         }
 
-        const [initiator, initiatorError] = await trycatch(() => message.guild!.members.fetch(user.id));
+        const [initiator, initiatorError] = await trycatch(() => guild.members.fetch(user.id));
         if (initiatorError) {
             logger.error({ error: initiatorError })
             return;
@@ -60,7 +65,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
 
         const [settings, error] = await trycatch(() =>
             this.db.query.nameChangeRequestSettings.findFirst({
-                where: eq(nameChangeRequestSettings.gid, message.guildId!)
+                where: eq(nameChangeRequestSettings.gid, message.guildId as string)
             })
         );
 
@@ -79,7 +84,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
             logger.info(`Attempting to approve name change request for ${targetMember.displayName}.`);
             const [, error] = await trycatch(async () => {
                 await targetMember.edit({ nick: message.content });
-                await trycatch(() => message.reactions.cache.get("❌")!.remove());
+                await trycatch(async () => message.reactions.cache.get("❌")?.remove());
             });
             if (error) {
                 logger.error({ error }, "Unable to approve name change request.");
@@ -88,7 +93,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<"message
             logger.info("Successfully approved name change request.");
         } else if (reaction.emoji.name === "❌") {
             logger.info("Attempting to reject name change request.");
-            const [, error] = await trycatch(() => message.reactions.cache.get("✅")!.remove());
+            const [, error] = await trycatch(async () => message.reactions.cache.get("✅")?.remove());
             if (error) {
                 logger.error({ error }, "Unable to reject name change request.");
                 return;

@@ -1,7 +1,7 @@
 import { ApplyOptions } from "@sapphire/decorators";
 import { isTextBasedChannel } from "@sapphire/discord.js-utilities";
 import type { Subcommand } from "@sapphire/plugin-subcommands";
-import { isNullish, partition } from "@sapphire/utilities";
+import { isNullish } from "@sapphire/utilities";
 import {
     ActionRowBuilder,
     type Attachment,
@@ -11,6 +11,7 @@ import {
     ComponentType,
     type ContextMenuCommandInteraction,
     EmbedBuilder,
+    type GuildBasedChannel,
     StringSelectMenuBuilder,
     type StringSelectMenuInteraction,
     StringSelectMenuOptionBuilder,
@@ -181,31 +182,26 @@ export class HallOfFameCommand extends AugmentedSubcommand {
             return;
         }
 
-        const channelData = await Promise.all(
+        const halls = (await Promise.all(
             settings.halls.map(async (hall) => {
                 const [channel] = await trycatch(() =>
                     inter.guild.channels.fetch(hall),
                 );
-                return {
-                    exists: !isNullish(channel),
-                    channel,
-                };
-            }),
-        );
+                return channel
+            })
+        ))
+            .filter((ch): ch is GuildBasedChannel => ch !== null)
 
-        const [existing, missing] = partition(
-            channelData,
-            (channel) => channel.exists,
-        );
+        const missingCount = settings.halls.length - halls.length
         const warning =
-            missing.length > 0
-                ? `Unable to retreive ${missing.length} ${plural("hall", missing.length)}.\n`
+            missingCount
+                ? `Unable to retreive ${missingCount} ${plural("hall", missingCount)}.\n`
                 : "";
 
-        const options = existing.map(({ channel }) => {
+        const options = halls.map((channel) => {
             return new StringSelectMenuOptionBuilder()
-                .setLabel(channel!.name)
-                .setValue(channel!.id);
+                .setLabel(channel.name)
+                .setValue(channel.id);
         });
 
         const selectId = "@leekbot/promote";
@@ -233,7 +229,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
             this.handleHallSelection(inter, collectedInter);
         });
 
-        collector.on("end", (c, reason) => {
+        collector.on("end", (_c, reason) => {
             if (reason === "time") {
                 inter.editReply({
                     content: "Selection timed out.",
@@ -247,6 +243,10 @@ export class HallOfFameCommand extends AugmentedSubcommand {
         inter: ContextMenuCommandInteraction<"cached">,
         selectInter: StringSelectMenuInteraction,
     ) {
+        const channel = inter.channel;
+        if (!channel) {
+            return;
+        }
         const hallChannelId = selectInter.values[0];
         const [hall, hallError] = await trycatch(() =>
             inter.guild.channels.fetch(hallChannelId),
@@ -259,7 +259,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
             return;
         }
         const [message, messageError] = await trycatch(() =>
-            inter.channel!.messages.fetch(inter.targetId),
+            channel.messages.fetch(inter.targetId),
         );
         if (messageError) {
             inter.editReply({
@@ -305,10 +305,11 @@ export class HallOfFameCommand extends AugmentedSubcommand {
             this.canEmbedAttachment,
         );
         const matchesYoutube = message.content.match(YOUTUBE_REGEX);
+        const firstAttachment = validAttachments.first();
         if (validAttachments.size > 1) {
             files.push(...message.attachments.map((a) => a.url));
-        } else if (validAttachments.size === 1) {
-            embed.setImage(validAttachments.first()!.url);
+        } else if (validAttachments.size === 1 && firstAttachment) {
+            embed.setImage(firstAttachment.url);
         } else if (matchesYoutube) {
             const [, id] = matchesYoutube;
             embed.setImage(`https://img.youtube.com/vi/${id}/maxresdefault.jpg`);

@@ -20,7 +20,7 @@ export class NameChangeRequestListener extends AugmentedListener<"messageCreate"
 
         const [settings, error] = await trycatch(() =>
             this.db.query.nameChangeRequestSettings.findFirst({
-                where: eq(nameChangeRequestSettings.gid, message.guildId!)
+                where: eq(nameChangeRequestSettings.gid, message.guildId as string)
             })
         );
 

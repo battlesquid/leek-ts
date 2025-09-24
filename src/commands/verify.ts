@@ -212,7 +212,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 
         if (settings.type !== "command") {
             inter.reply({
-                content: `This server does not have command verification enabled. Send your request in ${channelMention(settings.new_user_channel!)} in the format ${inlineCode("Name | Team")}.`,
+                content: `This server does not have command verification enabled. Send your request in ${channelMention(settings.new_user_channel as string)} in the format ${inlineCode("Name | Team")}.`,
                 ephemeral: true,
             });
             return;
@@ -448,7 +448,7 @@ export class VerifyCommand extends AugmentedSubcommand {
                 .update(verifySettings)
                 .set({
                     roles: doReplace
-                        ? arrayReplace(verifySettings.roles, role.id, replacementRole!.id)
+                        ? arrayReplace(verifySettings.roles, role.id, replacementRole.id)
                         : arrayRemove(verifySettings.roles, role.id),
                 })
                 .where(eq(verifySettings.gid, inter.guildId));
@@ -579,7 +579,7 @@ export class VerifyCommand extends AugmentedSubcommand {
         }
 
         const [channel, channelError] = await trycatch(() =>
-            this.container.client.channels.fetch(settings.new_user_channel!),
+            this.container.client.channels.fetch(settings.new_user_channel as string),
         );
         if (channel === null || channelError !== null) {
             await inter.editReply(
@@ -698,7 +698,7 @@ export class VerifyCommand extends AugmentedSubcommand {
                     reason: `Verified by ${inter.user.tag}`,
                 });
                 return user;
-            } catch (e) {
+            } catch (_e) {
                 return undefined;
             }
         };

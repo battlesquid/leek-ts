@@ -290,7 +290,7 @@ export class ReactRolesCommand extends AugmentedSubcommand {
         }
 
         const match = roleField.name.match(EmojiRegex);
-        const emoji = match ? match.groups!.id : roleField.name;
+        const emoji = (match !== null && match.groups !== undefined) ? match.groups.id : roleField.name;
         try {
             await msg.reactions.cache.get(emoji)?.remove();
             inter.reply(`Removed ${role} from '${title}'.`);
