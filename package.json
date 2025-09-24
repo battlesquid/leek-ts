@@ -15,9 +15,10 @@
 		"clean:all": "pnpm clean && rm -rf node_modules",
 		"neat": "biome check .",
 		"neat:fix": "biome check . --write",
+		"neat:migrate": "biome migrate",
 		"db:migrate": "infisical run --env=prod -- node dist/migrate.js",
 		"db:migrate-dev": "infisical run -- node dist/migrate.js",
-        "db:gen": "infisical run -- drizzle-kit generate"
+		"db:gen": "infisical run -- drizzle-kit generate"
 	},
 	"dependencies": {
 		"@sapphire/decorators": "^6.1.0",

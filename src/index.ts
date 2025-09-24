@@ -20,7 +20,12 @@ const client = new SapphireClient({
 			getenv("NODE_ENV") === "development" ? LogLevel.Trace : LogLevel.Info,
 		instance: new PinoLoggerAdapter(logger),
 	},
-	partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.GuildMember],
+	partials: [
+		Partials.Message,
+		Partials.Channel,
+		Partials.Reaction,
+		Partials.GuildMember,
+	],
 	presence: {
 		status: "online",
 		activities: [

@@ -5,9 +5,9 @@ import type * as schema from "./db/schema";
 import type { PinoLoggerAdapter } from "./utils/bot";
 
 declare module "@sapphire/pieces" {
-    export interface Container extends Omit<FrameworkContainer, "logger"> {
-        drizzle: NodePgDatabase<typeof schema>;
-        pool: Pool;
-        logger: PinoLoggerAdapter;
-    }
+	export interface Container extends Omit<FrameworkContainer, "logger"> {
+		drizzle: NodePgDatabase<typeof schema>;
+		pool: Pool;
+		logger: PinoLoggerAdapter;
+	}
 }

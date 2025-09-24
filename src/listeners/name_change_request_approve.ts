@@ -9,96 +9,117 @@ import { AugmentedListener } from "../utils/bot";
 import { trycatch } from "../utils/general";
 
 @ApplyOptions<Listener.Options>({
-    event: Events.MessageReactionAdd,
+	event: Events.MessageReactionAdd,
 })
 export class NameChangeRequestApproveListener extends AugmentedListener<"messageReactionAdd"> {
-    async run(reaction: MessageReaction, user: User) {
-        const logger = this.getEventLogger("NameChangeRequestApprove", reaction.message.guildId ?? "");
+	async run(reaction: MessageReaction, user: User) {
+		const logger = this.getEventLogger(
+			"NameChangeRequestApprove",
+			reaction.message.guildId ?? "",
+		);
 
-        if (user.bot) {
-            return;
-        }
+		if (user.bot) {
+			return;
+		}
 
-        if (reaction.partial) {
-            logger.info("Reaction is partial, fetching latest");
-            const [, error] = await trycatch(() => reaction.fetch());
-            if (error) {
-                logger.error({ error }, "Unable to fetch partial reaction, exiting.");
-            }
-        }
-        const message = reaction.message.partial ? await reaction.message.fetch() : reaction.message;
-        if (![ChannelType.PublicThread, ChannelType.GuildText].includes(message.channel.type)) {
-            logger.info("Message not in text channel or public thread, exiting.");
-            return;
-        }
+		if (reaction.partial) {
+			logger.info("Reaction is partial, fetching latest");
+			const [, error] = await trycatch(() => reaction.fetch());
+			if (error) {
+				logger.error({ error }, "Unable to fetch partial reaction, exiting.");
+			}
+		}
+		const message = reaction.message.partial
+			? await reaction.message.fetch()
+			: reaction.message;
+		if (
+			![ChannelType.PublicThread, ChannelType.GuildText].includes(
+				message.channel.type,
+			)
+		) {
+			logger.info("Message not in text channel or public thread, exiting.");
+			return;
+		}
 
-        const guild = message.guild;
-        if (!guild) {
-            return;
-        }
+		const guild = message.guild;
+		if (!guild) {
+			return;
+		}
 
-        const [targetMember, targetMemberError] = await trycatch(async () => {
-            if (message.channel.isThread()) {
-                logger.info("Getting member from thread.");
-                return message.guild?.members.fetch(message.author.id);
-            }
-            return message.member?.partial ? await message.member.fetch(true) : message.member
-        });
-        if (isNullish(targetMember)) {
-            logger.info("Unable to resolve target member, exiting");
-            if (targetMemberError) {
-                logger.error({ error: targetMemberError }, "Unable to resolve target member, exiting");
-            }
-            return;
-        }
+		const [targetMember, targetMemberError] = await trycatch(async () => {
+			if (message.channel.isThread()) {
+				logger.info("Getting member from thread.");
+				return message.guild?.members.fetch(message.author.id);
+			}
+			return message.member?.partial
+				? await message.member.fetch(true)
+				: message.member;
+		});
+		if (isNullish(targetMember)) {
+			logger.info("Unable to resolve target member, exiting");
+			if (targetMemberError) {
+				logger.error(
+					{ error: targetMemberError },
+					"Unable to resolve target member, exiting",
+				);
+			}
+			return;
+		}
 
-        const [initiator, initiatorError] = await trycatch(() => guild.members.fetch(user.id));
-        if (initiatorError) {
-            logger.error({ error: initiatorError })
-            return;
-        }
+		const [initiator, initiatorError] = await trycatch(() =>
+			guild.members.fetch(user.id),
+		);
+		if (initiatorError) {
+			logger.error({ error: initiatorError });
+			return;
+		}
 
-        if (!initiator.permissions.has(name_change_request.permissions)) {
-            logger.info("Reacting member does not have permissions, exiting.");
-            return;
-        }
+		if (!initiator.permissions.has(name_change_request.permissions)) {
+			logger.info("Reacting member does not have permissions, exiting.");
+			return;
+		}
 
-        const [settings, error] = await trycatch(() =>
-            this.db.query.nameChangeRequestSettings.findFirst({
-                where: eq(nameChangeRequestSettings.gid, message.guildId as string)
-            })
-        );
+		const [settings, error] = await trycatch(() =>
+			this.db.query.nameChangeRequestSettings.findFirst({
+				where: eq(nameChangeRequestSettings.gid, message.guildId as string),
+			}),
+		);
 
-        const canProcessRequest = error === null && message.channelId === settings?.channel;
-        if (!canProcessRequest) {
-            logger.info("Unable to process event");
-            if (error) {
-                logger.error({ error });
-            }
-            return;
-        }
+		const canProcessRequest =
+			error === null && message.channelId === settings?.channel;
+		if (!canProcessRequest) {
+			logger.info("Unable to process event");
+			if (error) {
+				logger.error({ error });
+			}
+			return;
+		}
 
-        logger.info("Processing event.");
+		logger.info("Processing event.");
 
-        if (reaction.emoji.name === "✅") {
-            logger.info(`Attempting to approve name change request for ${targetMember.displayName}.`);
-            const [, error] = await trycatch(async () => {
-                await targetMember.edit({ nick: message.content });
-                await trycatch(async () => message.reactions.cache.get("❌")?.remove());
-            });
-            if (error) {
-                logger.error({ error }, "Unable to approve name change request.");
-                return;
-            }
-            logger.info("Successfully approved name change request.");
-        } else if (reaction.emoji.name === "❌") {
-            logger.info("Attempting to reject name change request.");
-            const [, error] = await trycatch(async () => message.reactions.cache.get("✅")?.remove());
-            if (error) {
-                logger.error({ error }, "Unable to reject name change request.");
-                return;
-            }
-            logger.info("Successfully rejected name change request.");
-        }
-    }
+		if (reaction.emoji.name === "✅") {
+			logger.info(
+				`Attempting to approve name change request for ${targetMember.displayName}.`,
+			);
+			const [, error] = await trycatch(async () => {
+				await targetMember.edit({ nick: message.content });
+				await trycatch(async () => message.reactions.cache.get("❌")?.remove());
+			});
+			if (error) {
+				logger.error({ error }, "Unable to approve name change request.");
+				return;
+			}
+			logger.info("Successfully approved name change request.");
+		} else if (reaction.emoji.name === "❌") {
+			logger.info("Attempting to reject name change request.");
+			const [, error] = await trycatch(async () =>
+				message.reactions.cache.get("✅")?.remove(),
+			);
+			if (error) {
+				logger.error({ error }, "Unable to reject name change request.");
+				return;
+			}
+			logger.info("Successfully rejected name change request.");
+		}
+	}
 }

@@ -1,4 +1,3 @@
-
 const ENV_VARIABLES = [
 	"DISCORD_TOKEN",
 	"NODE_ENV",
