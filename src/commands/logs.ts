@@ -41,7 +41,7 @@ export class LogsCommand extends AugmentedSubcommand {
 	public async chatInputEnable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 
 		const channel = inter.options.getChannel<ChannelType.GuildText>(
 			"channel",
@@ -75,7 +75,7 @@ export class LogsCommand extends AugmentedSubcommand {
 	public async chatInputDisable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const type = inter.options.getString("type", true);
 		try {
 			await this.db

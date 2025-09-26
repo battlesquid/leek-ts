@@ -43,7 +43,7 @@ export class TimeoutCommand extends AugmentedCommand {
 	public override async chatInputRun(
 		inter: Command.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 
 		const member = inter.options.getMember("user");
 		const duration = inter.options.getString("duration", true) as StringValue;

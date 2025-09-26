@@ -91,7 +91,7 @@ export class ReactRolesCommand extends AugmentedSubcommand {
 	public async chatInputCreate(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 
 		const channel = inter.options.getChannel<ChannelType.GuildText>(
 			"channel",
@@ -130,7 +130,7 @@ export class ReactRolesCommand extends AugmentedSubcommand {
 	}
 
 	public async chatInputEdit(inter: Subcommand.ChatInputCommandInteraction) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 
 		const channel = inter.options.getChannel<ChannelType.GuildText>(
 			"channel",
@@ -184,7 +184,7 @@ export class ReactRolesCommand extends AugmentedSubcommand {
 	}
 
 	public async chatInputAddRole(inter: Subcommand.ChatInputCommandInteraction) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const channel = inter.options.getChannel<ChannelType.GuildText>(
 			"channel",
 			true,
@@ -242,7 +242,7 @@ export class ReactRolesCommand extends AugmentedSubcommand {
 	public async chatInputRemoveRole(
 		inter: Subcommand.ChatInputCommandInteraction,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const channel = inter.options.getChannel<ChannelType.GuildText>(
 			"channel",
 			true,

@@ -1,5 +1,6 @@
 import {
 	ChannelType,
+	InteractionContextType,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 	SlashCommandSubcommandBuilder,
@@ -30,6 +31,7 @@ const name_change_request = new SlashCommandBuilder()
 		"Manage name change request channels, channels where user's can request a nickname change.",
 	)
 	.setDefaultMemberPermissions(combinePermissions(permissions))
+	.setContexts(InteractionContextType.Guild)
 	.addSubcommand(enable)
 	.addSubcommand(disable);
 

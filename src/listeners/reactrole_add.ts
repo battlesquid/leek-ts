@@ -13,19 +13,28 @@ export class ReactRoleAddListener extends AugmentedListener<
 	typeof Events.MessageReactionAdd
 > {
 	async run(reaction: MessageReaction, user: User) {
-		const logger = this.getEventLogger(
-			"ReactRoleAdd",
-			reaction.message.guildId ?? "",
-		);
+		const logger = this.getEventLogger(reaction.message.guildId);
 
 		if (user.bot) {
 			logger.debug({ user: user.id }, "User is a bot, exiting.");
 			return;
 		}
 
-		const message = reaction.message.partial
-			? await reaction.message.fetch()
-			: reaction.message;
+		const [message, messageError] = await trycatch(async () => {
+			if (reaction.message.partial) {
+				logger.debug("Message is partial, fetching");
+				return reaction.message.fetch();
+			}
+			return reaction.message;
+		});
+
+		if (messageError) {
+			logger.error(
+				{ error: messageError },
+				"Unable to fetch partial message, exiting.",
+			);
+			return;
+		}
 
 		if (!message.inGuild()) {
 			logger.debug("Message not sent in guild, exiting.");
@@ -84,6 +93,7 @@ export class ReactRoleAddListener extends AugmentedListener<
 		}
 
 		if (member.roles.cache.has(roleId)) {
+			logger.debug("User already has role, exiting.");
 			return;
 		}
 

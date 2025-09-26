@@ -1,5 +1,6 @@
 import {
 	ChannelType,
+	InteractionContextType,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 	SlashCommandSubcommandBuilder,
@@ -141,6 +142,7 @@ const reactroles = new SlashCommandBuilder()
 		"Create and manage reactroles, messages that allow users to assign themselves roles.",
 	)
 	.setDefaultMemberPermissions(combinePermissions(permissions))
+	.setContexts(InteractionContextType.Guild)
 	.addSubcommand(create)
 	.addSubcommand(add_role)
 	.addSubcommand(remove_role)

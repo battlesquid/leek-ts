@@ -2,6 +2,7 @@ import {
 	ApplicationCommandType,
 	ChannelType,
 	ContextMenuCommandBuilder,
+	InteractionContextType,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 	SlashCommandSubcommandBuilder,
@@ -40,13 +41,15 @@ const hallOfFame = new SlashCommandBuilder()
 	.setName("hall_of_fame")
 	.setDescription("For recording noteworthy server content")
 	.setDefaultMemberPermissions(combinePermissions(permissions))
+	.setContexts(InteractionContextType.Guild)
 	.addSubcommand(enable)
 	.addSubcommand(disable);
 
 const promote = new ContextMenuCommandBuilder()
 	.setName("Add to Hall of Fame")
 	.setType(ApplicationCommandType.Message)
-	.setDefaultMemberPermissions(combinePermissions(permissions));
+	.setDefaultMemberPermissions(combinePermissions(permissions))
+	.setContexts(InteractionContextType.Guild);
 
 export default {
 	permissions,

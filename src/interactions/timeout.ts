@@ -1,4 +1,8 @@
-import { PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
+import {
+	InteractionContextType,
+	PermissionFlagsBits,
+	SlashCommandBuilder,
+} from "discord.js";
 import { combinePermissions } from "../utils/bot/bitwise";
 import type { CommandBundle } from ".";
 
@@ -8,6 +12,7 @@ const timeout = new SlashCommandBuilder()
 	.setName("timeout")
 	.setDescription("Timeout a user")
 	.setDefaultMemberPermissions(combinePermissions(permissions))
+	.setContexts(InteractionContextType.Guild)
 	.addUserOption((option) =>
 		option
 			.setName("user")

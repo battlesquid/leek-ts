@@ -1,5 +1,6 @@
 import {
 	ChannelType,
+	InteractionContextType,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 	SlashCommandSubcommandBuilder,
@@ -57,6 +58,7 @@ const imageboard = new SlashCommandBuilder()
 		"Manage imageboards, channels where only links, videos, and other media can be sent.",
 	)
 	.setDefaultMemberPermissions(combinePermissions(permissions))
+	.setContexts(InteractionContextType.Guild)
 	.addSubcommand(enable)
 	.addSubcommand(disable)
 	.addSubcommand(whitelist_add)

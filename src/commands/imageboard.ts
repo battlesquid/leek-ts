@@ -48,7 +48,7 @@ export class ImageBoardCommand extends AugmentedSubcommand {
 	public async chatInputEnable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const channel = inter.options.getChannel<ChannelType.GuildText>(
 			"channel",
 			true,
@@ -93,7 +93,7 @@ export class ImageBoardCommand extends AugmentedSubcommand {
 	public async chatInputDisable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const channel = inter.options.getChannel<ChannelType.GuildText>(
 			"channel",
 			true,
@@ -126,7 +126,7 @@ export class ImageBoardCommand extends AugmentedSubcommand {
 	public async chatInputWhitelistAdd(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 
 		const role = inter.options.getRole("role", true);
 		const [settings, error] = await this.getSettings(inter.guildId);
@@ -160,7 +160,7 @@ export class ImageBoardCommand extends AugmentedSubcommand {
 	public async chatInputWhitelistRemove(
 		inter: Subcommand.ChatInputCommandInteraction<"cached" | "raw">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const role = inter.options.getRole("role", true);
 
 		const [settings, error] = await this.getSettings(inter.guildId);

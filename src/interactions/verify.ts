@@ -1,5 +1,6 @@
 import {
 	ChannelType,
+	InteractionContextType,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 	SlashCommandSubcommandBuilder,
@@ -130,6 +131,7 @@ const verify = new SlashCommandBuilder()
 	.setName("verify")
 	.setDescription("Allows server staff to approve users into the server")
 	.setDefaultMemberPermissions(combinePermissions(permissions))
+	.setContexts(InteractionContextType.Guild)
 	.addSubcommand(enable)
 	.addSubcommand(disable)
 	.addSubcommand(list)

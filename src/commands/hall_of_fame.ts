@@ -75,7 +75,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
 	public async chatInputEnable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const channel = inter.options.getChannel<ChannelType.GuildText>(
 			"channel",
 			true,
@@ -125,7 +125,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
 	public async chatInputDisable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const channel = inter.options.getChannel("channel", true);
 		const [settings, error] = await this.getSettings(inter.guildId);
 
@@ -163,7 +163,7 @@ export class HallOfFameCommand extends AugmentedSubcommand {
 	}
 
 	public async contextMenuRun(inter: ContextMenuCommandInteraction<"cached">) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		if (!isTextBasedChannel(inter.channel) || !inter.inGuild()) {
 			inter.reply("This interaction must run within a text channel.");
 			return;

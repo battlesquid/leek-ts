@@ -1,5 +1,6 @@
 import {
 	ChannelType,
+	InteractionContextType,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 	SlashCommandSubcommandBuilder,
@@ -53,6 +54,7 @@ const logs = new SlashCommandBuilder()
 	.setName("logs")
 	.setDescription("Manage server wide logging")
 	.setDefaultMemberPermissions(combinePermissions(permissions))
+	.setContexts(InteractionContextType.Guild)
 	.addSubcommand(enable)
 	.addSubcommand(disable);
 

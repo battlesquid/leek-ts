@@ -82,7 +82,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 	public async chatInputEnable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const role = inter.options.getRole("role", true);
 		const type = inter.options.getString("type", true);
 		const channel = inter.options.getChannel("new_user_channel", false);
@@ -159,7 +159,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 	public async chatInputDisable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 
 		const [settings, error] = await this.getSettings(inter.guildId);
 		if (error) {
@@ -200,7 +200,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 	public async chatInputRequest(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const [settings, error] = await this.getSettings(inter.guildId);
 		if (error) {
 			logger.error(
@@ -264,7 +264,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 	public async chatInputList(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const [settings, error] = await this.getSettings(inter.guildId);
 		if (error) {
 			inter.reply({
@@ -344,7 +344,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 	public async chatInputAddRole(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const role = inter.options.getRole("role", true);
 		if (role.managed) {
 			inter.reply(
@@ -400,7 +400,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 	public async chatInputRemoveRole(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const role = inter.options.getRole("role", true);
 		const replacementRole = inter.options.getRole("replacement_role", false);
 
@@ -497,7 +497,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 			return;
 		}
 
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const [settings, error] = await this.getSettings(inter.guildId);
 		if (error) {
 			inter.reply({
@@ -565,7 +565,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 	public async chatInputRescan(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		await inter.deferReply({ ephemeral: true });
 
 		const [settings, settingsError] = await this.getSettings(inter.guildId);
@@ -605,6 +605,9 @@ export class VerifyCommand extends AugmentedSubcommand {
 		const [channel, channelError] = await trycatch(() =>
 			this.container.client.channels.fetch(settings.new_user_channel as string),
 		);
+		if (channelError) {
+			inter.editReply("An error occurred, please try again later.");
+		}
 		if (channel === null || channelError !== null) {
 			await inter.editReply(
 				`${channelMention(settings.new_user_channel)} was not found, check that the channel exists, then try again`,

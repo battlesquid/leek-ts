@@ -58,7 +58,7 @@ export abstract class AugmentedSubcommand extends Subcommand {
 		return this.container.drizzle;
 	}
 
-	public getCommandLogger(
+	public logger(
 		interaction:
 			| Subcommand.ChatInputCommandInteraction
 			| Command.ChatInputCommandInteraction
@@ -103,7 +103,7 @@ export abstract class AugmentedCommand extends Command {
 		return this.container.drizzle;
 	}
 
-	public getCommandLogger(
+	public logger(
 		interaction:
 			| Subcommand.ChatInputCommandInteraction
 			| Command.ChatInputCommandInteraction,
@@ -123,11 +123,13 @@ export abstract class AugmentedListener<
 		return this.container.drizzle;
 	}
 
-	getEventLogger(eventName: string, guildId: string) {
+	getEventLogger(guildId?: string | null) {
+		const listener =
+			Object.getPrototypeOf(this).constructor.name.split("Listener")[0];
 		return (this.container.logger as PinoLoggerAdapter).child({
-			eventName,
+			listener,
 			guildId,
-			rawEvent: this.event.toString(),
+			event: this.event.toString(),
 			hash: randomUUID(),
 		});
 	}

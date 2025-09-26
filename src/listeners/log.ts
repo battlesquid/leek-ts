@@ -1,11 +1,10 @@
 import { ApplyOptions } from "@sapphire/decorators";
-import type { Listener } from "@sapphire/framework";
+import { Events, type Listener } from "@sapphire/framework";
 import { isNullish, isNullishOrEmpty } from "@sapphire/utilities";
 import {
 	type Attachment,
 	Colors,
 	EmbedBuilder,
-	Events,
 	type Message,
 	type MessageCreateOptions,
 	type TextChannel,
@@ -39,9 +38,17 @@ const createPayload = async (
 	if (error) {
 		return null;
 	}
+	const msgs = await message.channel.messages.fetch({
+		before: message.id,
+		limit: 1,
+	});
+	const first = msgs.first();
+	const context = first ? `[Context](${first.url})` : "`No context available`";
 	const embed = new EmbedBuilder()
 		.setTitle("Image Deleted")
-		.setDescription(`Sent by ${message.member} in ${message.channel}`)
+		.setDescription(
+			`Sent by ${message.member} in ${message.channel}\n${context}`,
+		)
 		.setColor(Colors.DarkRed)
 		.setImage(`attachment://deleted.${ext}`)
 		.setTimestamp(Date.now());
@@ -112,9 +119,13 @@ const handleMessageLog = async (
 @ApplyOptions<Listener.Options>({
 	event: Events.MessageDelete,
 })
-export class LogListener extends AugmentedListener<Events.MessageDelete> {
+export class LogListener extends AugmentedListener<
+	typeof Events.MessageDelete
+> {
 	async run(message: Message<true>) {
+		const logger = this.getEventLogger(message.guildId);
 		if (!message.inGuild()) {
+			logger.debug("Message not sent in guild, exiting.");
 			return;
 		}
 
@@ -126,7 +137,13 @@ export class LogListener extends AugmentedListener<Events.MessageDelete> {
 				where: eq(logSettings.gid, message.guildId),
 			}),
 		);
-		if (isNullish(settings) || error !== null) {
+
+		if (error) {
+			logger.error({ error }, "Unable to get log settings.");
+			return;
+		}
+		if (isNullish(settings)) {
+			logger.debug("Logs not enabled, exiting.");
 			return;
 		}
 
@@ -137,10 +154,20 @@ export class LogListener extends AugmentedListener<Events.MessageDelete> {
 			const validPayloads = resolvedPayloads.filter(
 				(r): r is MessageCreateOptions => r !== null,
 			);
-			trycatch(() => handleImageLog(message, imageId, validPayloads));
+			const [, error] = await trycatch(() =>
+				handleImageLog(message, imageId, validPayloads),
+			);
+			if (error) {
+				logger.error({ error });
+			}
 		}
 		if (messageId !== null) {
-			trycatch(() => handleMessageLog(message, messageId));
+			const [, error] = await trycatch(() =>
+				handleMessageLog(message, messageId),
+			);
+			if (error) {
+				logger.error({ error });
+			}
 		}
 	}
 }

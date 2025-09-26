@@ -42,7 +42,7 @@ export class NameChangeRequestCommand extends AugmentedSubcommand {
 	public async chatInputEnable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		const channel = inter.options.getChannel<
 			ChannelType.GuildText | ChannelType.PublicThread
 		>("channel", true);
@@ -76,7 +76,7 @@ export class NameChangeRequestCommand extends AugmentedSubcommand {
 	public async chatInputDisable(
 		inter: Subcommand.ChatInputCommandInteraction<"cached">,
 	) {
-		const logger = this.getCommandLogger(inter);
+		const logger = this.logger(inter);
 		try {
 			await this.db
 				.delete(nameChangeRequestSettings)

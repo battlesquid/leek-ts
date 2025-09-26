@@ -9,15 +9,13 @@ let DATABASE: NodePgDatabase<typeof schema> | null = null;
 let connection: Pool | null = null;
 
 export const getPgPool = async () => {
-	if (connection === null) {
-		connection = new Pool({
-			host: getenv("DB_HOST"),
-			port: parseInt(getenv("DB_PORT"), 10),
-			user: getenv("DB_USER"),
-			password: getenv("DB_PASSWORD"),
-			database: getenv("DB_NAME"),
-		});
-	}
+	connection ??= new Pool({
+		host: getenv("DB_HOST"),
+		port: parseInt(getenv("DB_PORT"), 10),
+		user: getenv("DB_USER"),
+		password: getenv("DB_PASSWORD"),
+		database: getenv("DB_NAME"),
+	});
 	return connection;
 };
 
