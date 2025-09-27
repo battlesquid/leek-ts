@@ -692,15 +692,14 @@ export class VerifyCommand extends AugmentedSubcommand {
 				};
 			});
 
+		logger.info(`${scannedUsers.length} new users found`);
+
 		if (scannedUsers.length === 0) {
 			await inter.editReply("Verification list is already up to date.");
 			return;
 		}
 
-		logger.info(
-			{ users: scannedUsers.map((u) => u.uid) },
-			`Inserting ${scannedUsers.length} scanned users.`,
-		);
+		logger.info(`Inserting ${scannedUsers.length} scanned users.`);
 		const [, error] = await trycatch(() =>
 			this.db.insert(verifyEntry).values(scannedUsers).onConflictDoNothing(),
 		);
