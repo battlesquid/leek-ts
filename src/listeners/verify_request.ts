@@ -54,7 +54,7 @@ export class VerifyRequestListener extends AugmentedListener<
 			logger.debug("Message verification is not enabled, exiting.");
 			return;
 		}
-		if (message.channelId === settings?.new_user_channel) {
+		if (message.channelId !== settings?.new_user_channel) {
 			logger.debug("Request is not in new user channel, exiting");
 			return;
 		}
