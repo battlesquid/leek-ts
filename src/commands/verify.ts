@@ -667,7 +667,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 			}),
 		);
 
-		logger.info("Filtering members members.");
+		logger.info("Filtering members.");
 		const scannedUsers = fetchedMembers
 			.filter(
 				(
@@ -697,6 +697,10 @@ export class VerifyCommand extends AugmentedSubcommand {
 			return;
 		}
 
+		logger.info(
+			{ users: scannedUsers.map((u) => u.uid) },
+			`Inserting ${scannedUsers.length} scanned users.`,
+		);
 		const [, error] = await trycatch(() =>
 			this.db.insert(verifyEntry).values(scannedUsers).onConflictDoNothing(),
 		);
