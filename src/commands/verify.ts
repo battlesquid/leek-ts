@@ -15,12 +15,15 @@ import {
 	type Message,
 	type ModalActionRowComponentBuilder,
 	ModalBuilder,
+	type Snowflake,
 	type TextChannel,
 	TextInputBuilder,
 	TextInputStyle,
 	userMention,
 } from "discord.js";
 import { eq } from "drizzle-orm";
+import type pino from "pino";
+import { Logger } from "pino";
 import { arrayAppend, arrayRemove, arrayReplace } from "../db";
 import {
 	type VerifySettings,
@@ -36,6 +39,7 @@ import {
 	CommandHints,
 	chatInputCommand,
 	Emojis,
+	hasGroupMatches,
 	PaginatedEmbed,
 	slashCommandMention,
 	VERIFY_REGEX,
@@ -639,69 +643,23 @@ export class VerifyCommand extends AugmentedSubcommand {
 			return;
 		}
 
-		logger.info("Fetching history.");
-		const history = await channel.messages.fetch({ limit: 100, cache: false });
-		const messages = Array.from(
-			history
-				.sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp)
-				.filter((msg, key, coll) => {
-					const isUser = !msg.author.bot;
-					const nickMatch = msg.content.match(VERIFY_REGEX) !== null;
-					const noExistingEntry =
-						users.find((e) => e.uid === msg.author.id) === undefined;
-					const unique =
-						key === coll.find((m) => m.author.id === msg.author.id)?.id;
-
-					return isUser && nickMatch && noExistingEntry && unique;
-				})
-				.values(),
+		logger.info("Scanning for verification requests.");
+		const requests = await this.getUnverifiedUsers(
+			channel,
+			users,
+			settings,
+			logger,
 		);
 
-		logger.info("Fetching members.");
-		const fetchedMembers = await Promise.all(
-			messages.map(async (message) => {
-				const [member] = await trycatch(() =>
-					message.guild.members.fetch(message.author.id),
-				);
-				return { member, message };
-			}),
-		);
-
-		logger.info("Filtering members.");
-		const scannedUsers = fetchedMembers
-			.filter(
-				(
-					fetched,
-				): fetched is { member: GuildMember; message: Message<true> } => {
-					if (fetched.member === null) {
-						return false;
-					}
-					return !fetched.member.roles.cache.hasAll(...settings.roles);
-				},
-			)
-			.map<VerifyUser>(({ message }) => {
-				const match = message.content.match(VERIFY_REGEX)!;
-				const nick = VerifyRequestListener.formatNickname(
-					match.groups!.nick,
-					match.groups!.team,
-				);
-				return {
-					gid: inter.guildId,
-					uid: message.author.id,
-					nick,
-				};
-			});
-
-		logger.info(`${scannedUsers.length} new users found`);
-
-		if (scannedUsers.length === 0) {
+		logger.info(`${requests.length} new users found`);
+		if (requests.length === 0) {
 			await inter.editReply("Verification list is already up to date.");
 			return;
 		}
 
-		logger.info(`Inserting ${scannedUsers.length} scanned users.`);
+		logger.info(`Inserting ${requests.length} scanned users.`);
 		const [, error] = await trycatch(() =>
-			this.db.insert(verifyEntry).values(scannedUsers).onConflictDoNothing(),
+			this.db.insert(verifyEntry).values(requests).onConflictDoNothing(),
 		);
 		if (error) {
 			await inter.editReply(
@@ -711,8 +669,63 @@ export class VerifyCommand extends AugmentedSubcommand {
 		}
 
 		await inter.editReply(
-			`Rescan complete, verification list updated (${scannedUsers.length} ${plural("user", scannedUsers.length)}).`,
+			`Rescan complete, verification list updated (${requests.length} ${plural("user", requests.length)}).`,
 		);
+	}
+
+	private async getUnverifiedUsers(
+		channel: TextChannel,
+		users: VerifyUser[],
+		settings: VerifySettings,
+		logger: pino.Logger<string, boolean>,
+		before: Snowflake | undefined = undefined,
+	) {
+		const history = await channel.messages.fetch({
+			limit: 100,
+			cache: false,
+			before,
+		});
+		const requests = Array.from(
+			history
+				.sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp)
+				.map(async (message, key, coll): Promise<VerifyUser | undefined> => {
+					const isUser = !message.author.bot;
+					const unique =
+						key === coll.find((m) => m.author.id === message.author.id)?.id;
+					const noExistingEntry =
+						users.find((e) => e.uid === message.author.id) === undefined;
+					const match = message.content.match(VERIFY_REGEX);
+					const valid = isUser && match && noExistingEntry && unique;
+
+					logger.debug({
+						isUser,
+						unique,
+						noExistingEntry,
+					});
+
+					if (!valid || !hasGroupMatches(match)) {
+						return undefined;
+					}
+
+					const member = await message.guild.members.fetch(message.author.id);
+					if (member.roles.cache.hasAll(...settings.roles)) {
+						return undefined;
+					}
+
+					const nick = VerifyRequestListener.formatNickname(
+						match.groups.nick,
+						match.groups.team,
+					);
+
+					return {
+						gid: message.guildId,
+						uid: message.author.id,
+						nick,
+					};
+				})
+				.values(),
+		);
+		return (await Promise.all(requests)).filter((r) => r !== undefined);
 	}
 
 	private async onVerifySubmit(

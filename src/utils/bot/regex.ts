@@ -4,3 +4,12 @@ export const VERIFY_REGEX =
 	/(?<name>.+?)\s?[|,｜\s]\s?(?<team>(?<vrc>(?<num>[0-9]{2,5})[A-Z]?)|(?<vexu>[A-Z]{2,5}[0-9]?)|([nN][oO] [tT][eE][aA][mM]))/;
 export const YOUTUBE_REGEX =
 	/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|(?:embed|v)\/))([^?&"'>]+)/;
+
+export type RegExpMatchArrayWithGroups = RegExpMatchArray &
+	Required<Pick<RegExpMatchArray, "groups">>;
+
+export const hasGroupMatches = (
+	match: RegExpMatchArray | null,
+): match is RegExpMatchArrayWithGroups => {
+	return match !== null && match.groups !== undefined;
+};
