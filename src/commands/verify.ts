@@ -639,7 +639,8 @@ export class VerifyCommand extends AugmentedSubcommand {
 			return;
 		}
 
-		const history = await channel.messages.fetch({ limit: 100 });
+		logger.info("Fetching history.");
+		const history = await channel.messages.fetch({ limit: 100, cache: false });
 		const messages = Array.from(
 			history
 				.sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp)
@@ -656,14 +657,17 @@ export class VerifyCommand extends AugmentedSubcommand {
 				.values(),
 		);
 
+		logger.info("Fetching members.");
 		const fetchedMembers = await Promise.all(
 			messages.map(async (message) => {
 				const [member] = await trycatch(() =>
-					message.guild?.members.fetch(message.author.id),
+					message.guild.members.fetch(message.author.id),
 				);
 				return { member, message };
 			}),
 		);
+
+		logger.info("Filtering members members.");
 		const scannedUsers = fetchedMembers
 			.filter(
 				(
