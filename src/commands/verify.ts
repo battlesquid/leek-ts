@@ -685,21 +685,29 @@ export class VerifyCommand extends AugmentedSubcommand {
 			cache: false,
 			before,
 		});
+
+		const uniqueHistory = history.filter(
+			(message, key, coll) =>
+				key === coll.find((m) => m.author.id === message.author.id)?.id,
+		);
+
+		logger.info(`Retrieved ${uniqueHistory.size} unique requests.`);
+		const members = await channel.guild.members.fetch({
+			user: [...uniqueHistory.mapValues((message) => message.author).values()],
+		});
+
 		const requests = Array.from(
-			history
+			uniqueHistory
 				.sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp)
-				.map(async (message, key, coll): Promise<VerifyUser | undefined> => {
+				.map(async (message): Promise<VerifyUser | undefined> => {
 					const isUser = !message.author.bot;
-					const unique =
-						key === coll.find((m) => m.author.id === message.author.id)?.id;
 					const noExistingEntry =
 						users.find((e) => e.uid === message.author.id) === undefined;
 					const match = message.content.match(VERIFY_REGEX);
-					const valid = isUser && match && noExistingEntry && unique;
+					const valid = isUser && match && noExistingEntry;
 
 					logger.debug({
 						isUser,
-						unique,
 						noExistingEntry,
 					});
 
@@ -707,8 +715,8 @@ export class VerifyCommand extends AugmentedSubcommand {
 						return undefined;
 					}
 
-					const member = await message.guild.members.fetch(message.author.id);
-					if (member.roles.cache.hasAll(...settings.roles)) {
+					const member = members.get(message.author.id);
+					if (member?.roles.cache.hasAll(...settings.roles)) {
 						return undefined;
 					}
 
