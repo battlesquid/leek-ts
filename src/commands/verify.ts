@@ -33,6 +33,7 @@ import {
 } from "../db/schema";
 import { VerifyModalHandler } from "../interaction-handlers/verify_modal";
 import { verify } from "../interactions";
+import { VerificationType } from "../interactions/verify";
 import { VerifyRequestListener } from "../listeners/verify_request";
 import {
 	AugmentedSubcommand,
@@ -537,7 +538,10 @@ export class VerifyCommand extends AugmentedSubcommand {
 			: channel.id;
 		const resolvedGreeting = createGreeting ?? settings.create_greeting;
 
-		if (resolvedType === "message" && isNullish(resolvedChannel)) {
+		if (
+			resolvedType === VerificationType.Message &&
+			isNullish(resolvedChannel)
+		) {
 			inter.reply(
 				"You must specify a new users channel for message verification",
 			);
@@ -549,7 +553,8 @@ export class VerifyCommand extends AugmentedSubcommand {
 				.update(verifySettings)
 				.set({
 					type: resolvedType,
-					new_user_channel: resolvedType === "message" ? resolvedChannel : null,
+					new_user_channel:
+						resolvedType === VerificationType.Message ? resolvedChannel : null,
 					create_greeting: resolvedGreeting,
 				})
 				.where(eq(verifySettings.gid, inter.guildId));
@@ -572,6 +577,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 		const logger = this.logger(inter);
 		await inter.deferReply({ ephemeral: true });
 
+		const before = inter.options.getString("start", false) ?? undefined;
 		const [settings, settingsError] = await this.getSettings(inter.guildId);
 		if (settingsError) {
 			await inter.editReply("An error occurred while retrieving settings.");
@@ -645,7 +651,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 
 		logger.info("Scanning for verification requests.");
 		const [requests, requestsError] = await trycatch(() =>
-			this.getUnverifiedUsers(channel, users, settings, logger),
+			this.getUnverifiedUsers(channel, users, settings, logger, before),
 		);
 
 		if (requestsError) {
@@ -695,18 +701,18 @@ export class VerifyCommand extends AugmentedSubcommand {
 			)
 			.sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp);
 
-		logger.info(
+		logger.debug(
 			{ users: uniqueHistory.map((m) => m.author.displayName) },
 			`Retrieved ${uniqueHistory.size} unique requests.`,
 		);
 		const members = await channel.guild.members.fetch({
 			user: [...uniqueHistory.mapValues((message) => message.author).values()],
 		});
-		logger.info("Resolved all members");
+		logger.debug("Resolved all members");
 
 		const requests = [
 			...uniqueHistory.map((message): VerifyUser | undefined => {
-				logger.info(
+				logger.debug(
 					{ content: message.content },
 					`Now processing ${message.author.displayName}`,
 				);
@@ -718,11 +724,9 @@ export class VerifyCommand extends AugmentedSubcommand {
 					isUser &&
 					match &&
 					noExistingEntry &&
-					hasGroupMatches(match) &&
-					"name" in match.groups &&
-					"team" in match.groups;
+					hasGroupMatches(match, ["name", "team"] as const);
 
-				logger.info({
+				logger.debug({
 					isUser,
 					noExistingEntry,
 					content: message.content,
@@ -739,7 +743,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 					return undefined;
 				}
 
-				logger.info(
+				logger.debug(
 					`${member?.displayName} does not have all roles, continuing.`,
 				);
 				const nick = VerifyRequestListener.formatNickname(
@@ -754,7 +758,6 @@ export class VerifyCommand extends AugmentedSubcommand {
 				};
 			}),
 		];
-		logger.info({ requests }, "Finished processing unverified users.");
 		const result = requests.filter((r) => r !== undefined);
 		logger.info({ result }, "Finished processing unverified users");
 		return result;

@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import { eq } from "drizzle-orm";
 import { verifyEntry, verifySettings } from "../db/schema";
-import { AugmentedListener, VERIFY_REGEX } from "../utils/bot";
+import { AugmentedListener, hasGroupMatches, VERIFY_REGEX } from "../utils/bot";
 import { trycatch } from "../utils/general";
 
 @ApplyOptions<Listener.Options>({
@@ -30,7 +30,7 @@ export class VerifyRequestListener extends AugmentedListener<
 
 		const request = VerifyRequestListener.removeMentions(message.content);
 		const match = request.match(VERIFY_REGEX);
-		if (!match || !match.groups) {
+		if (!hasGroupMatches(match, ["name", "team"] as const)) {
 			logger.debug({}, "Message does not match verification regex, exiting.");
 			return;
 		}

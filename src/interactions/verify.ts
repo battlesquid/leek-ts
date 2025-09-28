@@ -8,6 +8,11 @@ import {
 import { combinePermissions } from "../utils/bot/bitwise";
 import type { CommandBundle } from ".";
 
+export enum VerificationType {
+	Message = "message",
+	Command = "command",
+}
+
 const enable = new SlashCommandSubcommandBuilder()
 	.setName("enable")
 	.setDescription("Enable new member verification")
@@ -16,8 +21,8 @@ const enable = new SlashCommandSubcommandBuilder()
 			.setName("type")
 			.setDescription("The type of verification to enable")
 			.addChoices(
-				{ name: "message", value: "message" },
-				{ name: "command", value: "command" },
+				{ name: VerificationType.Message, value: VerificationType.Message },
+				{ name: VerificationType.Command, value: VerificationType.Command },
 			)
 			.setRequired(true),
 	)
@@ -56,6 +61,14 @@ const rescan = new SlashCommandSubcommandBuilder()
 	.setName("rescan")
 	.setDescription(
 		"Rescans the user join channel. Requires message verification to be enabled.",
+	)
+	.addStringOption((option) =>
+		option
+			.setName("start")
+			.setDescription(
+				"The ID of the message from which the rescan should start.",
+			)
+			.setRequired(false),
 	);
 
 const add_role = new SlashCommandSubcommandBuilder()

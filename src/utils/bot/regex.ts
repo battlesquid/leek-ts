@@ -5,11 +5,18 @@ export const VERIFY_REGEX =
 export const YOUTUBE_REGEX =
 	/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|(?:embed|v)\/))([^?&"'>]+)/;
 
-export type RegExpMatchArrayWithGroups = RegExpMatchArray &
-	Required<Pick<RegExpMatchArray, "groups">>;
+export type RegExpMatchArrayWithGroups<Keys extends string> = Omit<
+	RegExpMatchArray,
+	"groups"
+> & { groups: Record<Keys, string>; 0: string };
 
-export const hasGroupMatches = (
+export const hasGroupMatches = <T extends readonly string[]>(
 	match: RegExpMatchArray | null,
-): match is RegExpMatchArrayWithGroups => {
-	return match !== null && match.groups !== undefined;
+	groups: T,
+): match is RegExpMatchArrayWithGroups<T[number]> => {
+	return (
+		match !== null &&
+		match.groups !== undefined &&
+		groups.every((g) => g in (match.groups ?? {}))
+	);
 };

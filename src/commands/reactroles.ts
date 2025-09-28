@@ -16,6 +16,7 @@ import {
 	AugmentedSubcommand,
 	CommandHints,
 	chatInputCommand,
+	hasGroupMatches,
 } from "../utils/bot";
 import { trycatch } from "../utils/general";
 
@@ -290,10 +291,9 @@ export class ReactRolesCommand extends AugmentedSubcommand {
 		}
 
 		const match = roleField.name.match(EmojiRegex);
-		const emoji =
-			match !== null && match.groups !== undefined
-				? match.groups.id
-				: roleField.name;
+		const emoji = hasGroupMatches(match, ["id"] as const)
+			? match.groups.id
+			: roleField.name;
 		try {
 			await msg.reactions.cache.get(emoji)?.remove();
 			inter.reply(`Removed ${role} from '${title}'.`);

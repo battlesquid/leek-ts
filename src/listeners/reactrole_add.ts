@@ -3,7 +3,7 @@ import { RoleMentionRegex } from "@sapphire/discord.js-utilities";
 import { Events, type Listener } from "@sapphire/framework";
 import type { MessageReaction, User } from "discord.js";
 import { ReactRolesCommand } from "../commands/reactroles";
-import { AugmentedListener } from "../utils/bot";
+import { AugmentedListener, hasGroupMatches } from "../utils/bot";
 import { trycatch } from "../utils/general";
 
 @ApplyOptions<Listener.Options>({
@@ -60,7 +60,7 @@ export class ReactRoleAddListener extends AugmentedListener<
 		}
 
 		const match = field.value.match(RoleMentionRegex);
-		if (!match || !match.groups) {
+		if (!hasGroupMatches(match, ["id"] as const)) {
 			logger.debug(`${field.value} does not match role regex, exiting`);
 			return;
 		}
