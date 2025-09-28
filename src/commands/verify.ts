@@ -686,10 +686,12 @@ export class VerifyCommand extends AugmentedSubcommand {
 			before,
 		});
 
-		const uniqueHistory = history.filter(
-			(message, key, coll) =>
-				key === coll.find((m) => m.author.id === message.author.id)?.id,
-		);
+		const uniqueHistory = history
+			.filter(
+				(message, key, coll) =>
+					key === coll.find((m) => m.author.id === message.author.id)?.id,
+			)
+			.sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp);
 
 		logger.info(
 			{ users: uniqueHistory.map((m) => m.author.displayName) },
@@ -700,55 +702,53 @@ export class VerifyCommand extends AugmentedSubcommand {
 		});
 		logger.info("Resolved all members");
 
-		const requests = Array.from(
-			uniqueHistory
-				.sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp)
-				.map(async (message): Promise<VerifyUser | undefined> => {
-					logger.info(
-						{ content: message.content },
-						`Now processing ${message.author.displayName}`,
-					);
-					const isUser = !message.author.bot;
-					const noExistingEntry =
-						users.find((e) => e.uid === message.author.id) === undefined;
-					const match = message.content.match(VERIFY_REGEX);
-					const valid =
-						isUser && match && noExistingEntry && hasGroupMatches(match);
+		const requests = [
+			...uniqueHistory.map((message): VerifyUser | undefined => {
+				logger.info(
+					{ content: message.content },
+					`Now processing ${message.author.displayName}`,
+				);
+				const isUser = !message.author.bot;
+				const noExistingEntry =
+					users.find((e) => e.uid === message.author.id) === undefined;
+				const match = message.content.match(VERIFY_REGEX);
+				const valid =
+					isUser && match && noExistingEntry && hasGroupMatches(match);
 
-					logger.info({
-						isUser,
-						noExistingEntry,
-						content: message.content,
-						match: !!match,
-					});
+				logger.info({
+					isUser,
+					noExistingEntry,
+					content: message.content,
+					match: !!match,
+				});
 
-					if (!valid) {
-						return undefined;
-					}
+				if (!valid) {
+					return undefined;
+				}
 
-					const member = members.get(message.author.id);
-					if (member?.roles.cache.hasAll(...settings.roles)) {
-						return undefined;
-					}
+				const member = members.get(message.author.id);
+				if (member?.roles.cache.hasAll(...settings.roles)) {
+					return undefined;
+				}
 
-					logger.info(
-						`${member?.displayName} does not have all roles, continuing.`,
-					);
-					const nick = VerifyRequestListener.formatNickname(
-						match.groups.nick,
-						match.groups.team,
-					);
+				logger.info(
+					`${member?.displayName} does not have all roles, continuing.`,
+				);
+				const nick = VerifyRequestListener.formatNickname(
+					match.groups.nick,
+					match.groups.team,
+				);
 
-					return {
-						gid: message.guildId,
-						uid: message.author.id,
-						nick,
-					};
-				}),
-		);
-		logger.info("Awaiting unverified user processing.");
-		const result = (await Promise.all(requests)).filter((r) => r !== undefined);
-		logger.info("Finished processing unverified users");
+				return {
+					gid: message.guildId,
+					uid: message.author.id,
+					nick,
+				};
+			}),
+		];
+		logger.info({ requests }, "Finished processing unverified users.");
+		const result = requests.filter((r) => r !== undefined);
+		logger.info({ result }, "Finished processing unverified users");
 		return result;
 	}
 
