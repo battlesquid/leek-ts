@@ -10,9 +10,7 @@ import {
 	ChannelType,
 	channelMention,
 	EmbedBuilder,
-	type GuildMember,
 	inlineCode,
-	type Message,
 	type ModalActionRowComponentBuilder,
 	ModalBuilder,
 	type Snowflake,
@@ -23,7 +21,6 @@ import {
 } from "discord.js";
 import { eq } from "drizzle-orm";
 import type pino from "pino";
-import { Logger } from "pino";
 import { arrayAppend, arrayRemove, arrayReplace } from "../db";
 import {
 	type VerifySettings,
