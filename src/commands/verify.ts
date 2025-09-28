@@ -715,7 +715,12 @@ export class VerifyCommand extends AugmentedSubcommand {
 					users.find((e) => e.uid === message.author.id) === undefined;
 				const match = message.content.match(VERIFY_REGEX);
 				const valid =
-					isUser && match && noExistingEntry && hasGroupMatches(match);
+					isUser &&
+					match &&
+					noExistingEntry &&
+					hasGroupMatches(match) &&
+					"nick" in match.groups &&
+					"team" in match.groups;
 
 				logger.info({
 					isUser,
