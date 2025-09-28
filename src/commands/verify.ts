@@ -736,6 +736,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 				}
 
 				const member = members.get(message.author.id);
+				logger.info({ roles: member?.roles.cache.keys() });
 				if (member?.roles.cache.hasAll(...settings.roles)) {
 					return undefined;
 				}

@@ -75,7 +75,10 @@ export class VerifyRequestListener extends AugmentedListener<
 					target: [verifyEntry.gid, verifyEntry.uid],
 					set: { nick },
 				});
-			logger.info({ user: message.author.id }, "Added verification request");
+			logger.info(
+				{ user: message.author.id, nick },
+				"Added verification request",
+			);
 		} catch (error) {
 			logger.error(
 				{
