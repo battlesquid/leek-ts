@@ -719,7 +719,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 					match &&
 					noExistingEntry &&
 					hasGroupMatches(match) &&
-					"nick" in match.groups &&
+					"name" in match.groups &&
 					"team" in match.groups;
 
 				logger.info({
@@ -743,7 +743,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 					`${member?.displayName} does not have all roles, continuing.`,
 				);
 				const nick = VerifyRequestListener.formatNickname(
-					match.groups.nick,
+					match.groups.name,
 					match.groups.team,
 				);
 
