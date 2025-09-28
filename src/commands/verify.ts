@@ -644,12 +644,14 @@ export class VerifyCommand extends AugmentedSubcommand {
 		}
 
 		logger.info("Scanning for verification requests.");
-		const requests = await this.getUnverifiedUsers(
-			channel,
-			users,
-			settings,
-			logger,
+		const [requests, requestsError] = await trycatch(() =>
+			this.getUnverifiedUsers(channel, users, settings, logger),
 		);
+
+		if (requestsError) {
+			logger.error({ error: requestsError });
+			return;
+		}
 
 		logger.info(`${requests.length} new users found`);
 		if (requests.length === 0) {
