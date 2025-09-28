@@ -743,7 +743,9 @@ export class VerifyCommand extends AugmentedSubcommand {
 				})
 				.values(),
 		);
-		return (await Promise.all(requests)).filter((r) => r !== undefined);
+		const result = (await Promise.all(requests)).filter((r) => r !== undefined);
+		logger.info("Finished processing unverified users");
+		return result;
 	}
 
 	private async onVerifySubmit(
