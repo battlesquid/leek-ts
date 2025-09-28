@@ -691,10 +691,14 @@ export class VerifyCommand extends AugmentedSubcommand {
 				key === coll.find((m) => m.author.id === message.author.id)?.id,
 		);
 
-		logger.info(`Retrieved ${uniqueHistory.size} unique requests.`);
+		logger.info(
+			{ users: uniqueHistory.map((m) => m.author.displayName) },
+			`Retrieved ${uniqueHistory.size} unique requests.`,
+		);
 		const members = await channel.guild.members.fetch({
 			user: [...uniqueHistory.mapValues((message) => message.author).values()],
 		});
+		logger.info("Resolved all members");
 
 		const requests = Array.from(
 			uniqueHistory
