@@ -708,14 +708,17 @@ export class VerifyCommand extends AugmentedSubcommand {
 					const noExistingEntry =
 						users.find((e) => e.uid === message.author.id) === undefined;
 					const match = message.content.match(VERIFY_REGEX);
-					const valid = isUser && match && noExistingEntry;
+					const valid =
+						isUser && match && noExistingEntry && hasGroupMatches(match);
 
 					logger.info({
 						isUser,
 						noExistingEntry,
+						content: message.content,
+						match: !!match,
 					});
 
-					if (!valid || !hasGroupMatches(match)) {
+					if (!valid) {
 						return undefined;
 					}
 
@@ -724,6 +727,9 @@ export class VerifyCommand extends AugmentedSubcommand {
 						return undefined;
 					}
 
+					logger.info(
+						`${member?.displayName} does not have all roles, continuing.`,
+					);
 					const nick = VerifyRequestListener.formatNickname(
 						match.groups.nick,
 						match.groups.team,
