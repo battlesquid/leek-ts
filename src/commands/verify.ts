@@ -710,7 +710,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 					const match = message.content.match(VERIFY_REGEX);
 					const valid = isUser && match && noExistingEntry;
 
-					logger.debug({
+					logger.info({
 						isUser,
 						noExistingEntry,
 					});
