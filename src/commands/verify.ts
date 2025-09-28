@@ -727,6 +727,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 					noExistingEntry,
 					content: message.content,
 					match: !!match,
+					valid,
 				});
 
 				if (!valid) {
