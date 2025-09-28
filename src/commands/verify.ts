@@ -704,6 +704,10 @@ export class VerifyCommand extends AugmentedSubcommand {
 			uniqueHistory
 				.sort((msg1, msg2) => msg2.createdTimestamp - msg1.createdTimestamp)
 				.map(async (message): Promise<VerifyUser | undefined> => {
+					logger.info(
+						{ content: message.content },
+						`Now processing ${message.author.displayName}`,
+					);
 					const isUser = !message.author.bot;
 					const noExistingEntry =
 						users.find((e) => e.uid === message.author.id) === undefined;
