@@ -744,8 +744,7 @@ export class VerifyCommand extends AugmentedSubcommand {
 						uid: message.author.id,
 						nick,
 					};
-				})
-				.values(),
+				}),
 		);
 		logger.info("Awaiting unverified user processing.");
 		const result = (await Promise.all(requests)).filter((r) => r !== undefined);
