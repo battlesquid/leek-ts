@@ -1,9 +1,9 @@
 import { container, LogLevel, SapphireClient } from "@sapphire/framework";
 import { ActivityType, GatewayIntentBits, Partials } from "discord.js";
-import { getenv } from "./config";
 import { getDatabase, getPgPool } from "./db";
 import { getLoggerInstance } from "./logger";
 import { PinoLoggerAdapter } from "./utils/bot";
+import { getvar } from "./vars";
 
 const logger = getLoggerInstance("leekbot");
 
@@ -17,7 +17,7 @@ const client = new SapphireClient({
 	],
 	logger: {
 		level:
-			getenv("NODE_ENV") === "development" ? LogLevel.Trace : LogLevel.Info,
+			getvar("NODE_ENV") === "development" ? LogLevel.Trace : LogLevel.Info,
 		instance: new PinoLoggerAdapter(logger),
 	},
 	partials: [
@@ -30,8 +30,9 @@ const client = new SapphireClient({
 		status: "online",
 		activities: [
 			{
-				type: ActivityType.Watching,
-				name: "out for leeks",
+				type: ActivityType.Custom,
+				state: "Playing Deadlock",
+				name: "",
 			},
 		],
 	},
@@ -40,7 +41,11 @@ const client = new SapphireClient({
 const main = async () => {
 	container.drizzle = await getDatabase();
 	container.pool = await getPgPool();
-	await client.login(getenv("DISCORD_TOKEN"));
+	const RobotEvents = (await import("robotevents")).Client;
+	container.robotevents = RobotEvents({
+		authorization: { token: getvar("ROBOTEVENTS_TOKEN") },
+	});
+	await client.login(getvar("DISCORD_TOKEN"));
 };
 
 const cleanup = () => {
@@ -49,18 +54,17 @@ const cleanup = () => {
 
 main();
 
-process.on("uncaughtException", (error) => {
-	console.error(error);
-	cleanup();
-	process.exit(1);
-});
-
-process.on("SIGTERM", () => {
-	cleanup();
-	process.exit(0);
-});
-
-process.on("SIGINT", () => {
-	cleanup();
-	process.exit(0);
-});
+process
+	.on("uncaughtException", (error) => {
+		console.error(error);
+		cleanup();
+		process.exit(1);
+	})
+	.on("SIGTERM", () => {
+		cleanup();
+		process.exit(0);
+	})
+	.on("SIGINT", () => {
+		cleanup();
+		process.exit(0);
+	});

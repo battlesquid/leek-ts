@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { Pool } from "pg";
-import { getenv } from "../config";
+import { getvar } from "../vars";
 import * as schema from "./schema";
 
 let DATABASE: NodePgDatabase<typeof schema> | null = null;
@@ -10,11 +10,11 @@ let connection: Pool | null = null;
 
 export const getPgPool = async () => {
 	connection ??= new Pool({
-		host: getenv("DB_HOST"),
-		port: parseInt(getenv("DB_PORT"), 10),
-		user: getenv("DB_USER"),
-		password: getenv("DB_PASSWORD"),
-		database: getenv("DB_NAME"),
+		host: getvar("DB_HOST"),
+		port: parseInt(getvar("DB_PORT"), 10),
+		user: getvar("DB_USER"),
+		password: getvar("DB_PASSWORD"),
+		database: getvar("DB_NAME"),
 	});
 	return connection;
 };

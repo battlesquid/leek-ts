@@ -54,4 +54,5 @@ export const hallOfFameSettings = pgTable("hall_of_fame", {
 export const nameChangeRequestSettings = pgTable("name_change_request", {
 	gid: varchar("gid").primaryKey(),
 	channel: varchar("channel").notNull(),
+	validate: boolean("validate").default(false),
 });

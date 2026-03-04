@@ -8,6 +8,7 @@ import name_change_request from "../interactions/name_change_request";
 import { AugmentedListener } from "../utils/bot";
 import { trycatch } from "../utils/general";
 import { NameChangeRequestListener } from "./name_change_request";
+import { VerifyRequestListener } from "./verify_request";
 
 @ApplyOptions<Listener.Options>({
 	event: Events.MessageReactionAdd,
@@ -112,7 +113,10 @@ export class NameChangeRequestApproveListener extends AugmentedListener<
 				`Attempting to approve name change request for ${targetMember.displayName}.`,
 			);
 			const [, error] = await trycatch(async () => {
-				await targetMember.edit({ nick: message.content });
+				const nick = settings.validate
+					? (await VerifyRequestListener.parse(message, logger))[0]
+					: message.content;
+				await targetMember.edit({ nick });
 				await trycatch(async () =>
 					message.reactions.cache
 						.get(NameChangeRequestListener.RejectEmoji)

@@ -1,13 +1,13 @@
 import os from "node:os";
 import pino, { type LoggerOptions } from "pino";
-import { getenv } from "./config";
+import { getvar } from "./vars";
 
 export const getLoggerInstance = (service: string, options?: LoggerOptions) => {
 	return pino({
 		...options,
 		errorKey: "error",
 		base: {
-			env: getenv("NODE_ENV"),
+			env: getvar("NODE_ENV"),
 			pid: process.pid,
 			hostname: os.hostname(),
 		},
@@ -21,10 +21,10 @@ export const getLoggerInstance = (service: string, options?: LoggerOptions) => {
 						labels: {
 							service,
 						},
-						host: getenv("LOKI_HOST"),
+						host: getvar("LOKI_HOST"),
 						basicAuth: {
-							username: getenv("LOKI_USERNAME"),
-							password: getenv("LOKI_PASSWORD"),
+							username: getvar("LOKI_USERNAME"),
+							password: getvar("LOKI_PASSWORD"),
 						},
 					},
 				},

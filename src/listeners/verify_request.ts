@@ -1,5 +1,5 @@
 import { ApplyOptions } from "@sapphire/decorators";
-import { Events, type Listener } from "@sapphire/framework";
+import { container, Events, type Listener } from "@sapphire/framework";
 import {
 	inlineCode,
 	type Message,
@@ -7,8 +7,15 @@ import {
 	type Snowflake,
 } from "discord.js";
 import { eq } from "drizzle-orm";
+import type pino from "pino";
+import { Logger } from "pino";
 import { verifyEntry, verifySettings } from "../db/schema";
-import { AugmentedListener, hasGroupMatches, VERIFY_REGEX } from "../utils/bot";
+import {
+	AugmentedListener,
+	NO_TEAM_REGEX,
+	TEAM_NUMBER_REGEX,
+	VERIFY_DELIMETER_REGEX,
+} from "../utils/bot";
 import { trycatch } from "../utils/general";
 
 @ApplyOptions<Listener.Options>({
@@ -27,14 +34,6 @@ export class VerifyRequestListener extends AugmentedListener<
 			logger.debug({ user: message.author.id }, "User is a bot, exiting.");
 			return;
 		}
-
-		const request = VerifyRequestListener.removeMentions(message.content);
-		const match = request.match(VERIFY_REGEX);
-		if (!hasGroupMatches(match, ["name", "team"] as const)) {
-			logger.debug({}, "Message does not match verification regex, exiting.");
-			return;
-		}
-		const { name, team } = match.groups;
 
 		const [settings, error] = await trycatch(() =>
 			this.db.query.verifySettings.findFirst({
@@ -59,7 +58,15 @@ export class VerifyRequestListener extends AugmentedListener<
 			return;
 		}
 
-		const nick = VerifyRequestListener.formatNickname(name, team);
+		const [nick, excluded] = await VerifyRequestListener.parse(message, logger);
+		if (!nick) {
+			return;
+		}
+
+		const excludedMessage =
+			excluded.length > 0
+				? ` Excluded the following teams from your nickname due to character limit: ${excluded.join(", ")}.`
+				: "";
 
 		try {
 			await this.db
@@ -88,38 +95,41 @@ export class VerifyRequestListener extends AugmentedListener<
 				},
 				"Unable to add verification request.",
 			);
-			const [, dmUserError] = await this.dmUser(
+			await VerifyRequestListener.dmUser(
 				message.author.id,
 				"An error occurred while processing your request, please try again later",
+				logger,
 			);
-			if (dmUserError) {
-				logger.error(
-					{ error: dmUserError },
-					"An error occurred while dm-ing verified user.",
-				);
-			}
 			return;
 		}
 
-		const [, dmUserError] = await this.dmUser(
+		VerifyRequestListener.dmUser(
 			message.author.id,
-			`Your verification request as ${inlineCode(nick)} has been submitted and is pending review. If your nickname looks incorrect, you may edit your submission by sending a new message containing your name and team in the format ${inlineCode("Name | Team")}.`,
+			`Your verification request as ${inlineCode(nick)} has been submitted and is pending review.${excludedMessage}If your nickname looks incorrect, you may edit your submission by sending a new message containing your name and team in the format ${inlineCode("Name | Team")}.`,
+			logger,
 		);
-		if (dmUserError) {
-			logger.error(
-				{ error: dmUserError },
-				"An error occurred while dm-ing verified user.",
-			);
-		}
 	}
 
-	private dmUser(id: Snowflake, message: string) {
-		return trycatch(() => this.container.client.users.send(id, message));
+	private static async dmUser(
+		id: Snowflake,
+		message: string,
+		logger: pino.Logger<string, boolean>,
+	) {
+		const result = await trycatch(() =>
+			container.client.users.send(id, message),
+		);
+		if (result[1] !== null) {
+			logger.error(
+				{ error: result[1] },
+				"An error occurred while dm-ing user.",
+			);
+		}
+		return result;
 	}
 
 	static formatNickname(nick: string, team: string) {
 		const formattedTeam =
-			team.toLowerCase() === "no team" ? " | No Team" : ` | ${team}`;
+			team.toLowerCase() === "no team" ? " | No Team" : `｜${team}`;
 		const sanitizedNick = VerifyRequestListener.removeMentions(nick);
 		const truncatedNick = sanitizedNick.slice(0, 32 - formattedTeam.length);
 		return `${truncatedNick}${formattedTeam}`;
@@ -131,5 +141,88 @@ export class VerifyRequestListener extends AugmentedListener<
 			.replace(MessageMentions.ChannelsPattern, "")
 			.replace(MessageMentions.EveryonePattern, "")
 			.trim();
+	}
+
+	static async verifyTeamExists(team: string) {
+		const v5rcExists = await container.robotevents.teams.getByNumber(team, 1);
+		if (v5rcExists.data) {
+			return true;
+		}
+		const vurcExists = await container.robotevents.teams.getByNumber(team, 4);
+		if (vurcExists.data) {
+			return true;
+		}
+		return false;
+	}
+
+	static async parse(
+		message: Message,
+		logger: pino.Logger<string, boolean>,
+	): Promise<[nick: string | undefined, excluded: string[]]> {
+		const [name, ...teams] = VerifyRequestListener.removeMentions(
+			message.content,
+		).split(VERIFY_DELIMETER_REGEX);
+
+		if (teams.length === 0) {
+			logger.debug({}, "Verification request is missing teams, exiting.");
+			return [undefined, []];
+		}
+
+		const [firstTeam, ...otherTeams] = teams.some(NO_TEAM_REGEX.test)
+			? ["No Team"]
+			: await Promise.all(
+					teams
+						.map((t) => t.toUpperCase())
+						.filter(async (t) => {
+							if (!TEAM_NUMBER_REGEX.test(t)) return false;
+							return await VerifyRequestListener.verifyTeamExists(t);
+						}),
+				);
+
+		if (firstTeam === undefined) {
+			logger.debug(
+				{
+					user: message.author.id,
+					username: message.author.username,
+				},
+				"No valid teams provided.",
+			);
+			await VerifyRequestListener.dmUser(
+				message.author.id,
+				`There are no valid team numbers present in your request. Please try again with the format ${inlineCode("Name | Team")} (e.g., ${inlineCode("Leekbot | ABCD")} for VURC teams or ${inlineCode("Leekbot | 1234A")} for V5RC teams). If your team number is not yet registered, please use ${inlineCode("No Team")}; you will be able to request a name change later.`,
+				logger,
+			);
+			return [undefined, []];
+		}
+
+		const initialNick = `${VerifyRequestListener.removeMentions(name)}｜${firstTeam}`;
+		if (initialNick.length > 32) {
+			logger.debug(
+				{
+					user: message.author.id,
+					username: message.author.username,
+					nick: initialNick,
+				},
+				`Provided nickname '${initialNick}' is too long.`,
+			);
+			await VerifyRequestListener.dmUser(
+				message.author.id,
+				`Your requested nickname '${initialNick}' is too long (${initialNick.length} characters, 32 character limit). Please shorten it and try again.`,
+				logger,
+			);
+			return [undefined, []];
+		}
+
+		const excluded: string[] = [];
+		const nick = otherTeams.reduce((prev, curr) => {
+			const name = `${prev}｜${curr}`;
+			if (name.length >= 32) {
+				excluded.push(curr);
+				return prev;
+			}
+			return name;
+		}, initialNick);
+
+		return [nick, excluded];
 	}
 }

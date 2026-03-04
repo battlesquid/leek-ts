@@ -17,6 +17,14 @@ const enable = new SlashCommandSubcommandBuilder()
 			.setDescription("The channel to set as a name change request channel")
 			.addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread)
 			.setRequired(true),
+	)
+	.addBooleanOption((opt) =>
+		opt
+			.setName("validate")
+			.setDescription(
+				"Whether to check if the user's request is valid (contains team numbers, team numbers are registered). This also normalizes requests upon approval.",
+			)
+			.setRequired(false),
 	);
 
 const disable = new SlashCommandSubcommandBuilder()

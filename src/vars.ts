@@ -9,11 +9,12 @@ const ENV_VARIABLES = [
 	"DB_USER",
 	"DB_PASSWORD",
 	"DB_NAME",
+	"ROBOTEVENTS_TOKEN",
 ] as const;
 
 type ConfigVariable = (typeof ENV_VARIABLES)[number];
 
-const loadConfig = () => {
+const loadVars = () => {
 	const loaded: Record<string, string> = {};
 	ENV_VARIABLES.forEach((v) => {
 		const value = process.env[v];
@@ -27,7 +28,7 @@ const loadConfig = () => {
 
 let CONFIG: Record<string, string> | null = null;
 
-export const getenv = (key: ConfigVariable) => {
-	CONFIG ??= loadConfig();
+export const getvar = (key: ConfigVariable) => {
+	CONFIG ??= loadVars();
 	return CONFIG[key];
 };

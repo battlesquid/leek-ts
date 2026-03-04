@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { nameChangeRequestSettings } from "../db/schema";
 import { AugmentedListener } from "../utils/bot";
 import { trycatch } from "../utils/general";
+import { VerifyRequestListener } from "./verify_request";
 
 @ApplyOptions<Listener.Options>({
 	event: Events.MessageCreate,
@@ -45,6 +46,14 @@ export class NameChangeRequestListener extends AugmentedListener<
 		if (message.channelId !== settings?.channel) {
 			logger.debug("Message not in name change requests channel, exiting.");
 			return;
+		}
+
+		if (settings.validate) {
+			const [nick] = await VerifyRequestListener.parse(message, logger);
+			if (nick === undefined) {
+				await trycatch(() => message.delete());
+				return;
+			}
 		}
 
 		const [, reactError] = await trycatch(async () => {

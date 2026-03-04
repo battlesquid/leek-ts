@@ -6,7 +6,7 @@ import type {
 	ContextMenuCommandInteraction,
 	Snowflake,
 } from "discord.js";
-import { getenv } from "../../config";
+import { getvar } from "../../vars";
 import { slashCommandMention } from "./formatters";
 import type { PinoLoggerAdapter } from "./pino_logger_adapter";
 
@@ -33,19 +33,19 @@ export class CommandHints {
 	}
 
 	getChatId() {
-		return getenv("NODE_ENV") === "development"
+		return getvar("NODE_ENV") === "development"
 			? this.chat.development
 			: this.chat.production;
 	}
 
 	getMessageId() {
-		return getenv("NODE_ENV") === "development"
+		return getvar("NODE_ENV") === "development"
 			? this.message.development
 			: this.message.production;
 	}
 
 	getUserId() {
-		return getenv("NODE_ENV") === "development"
+		return getvar("NODE_ENV") === "development"
 			? this.user.development
 			: this.user.production;
 	}

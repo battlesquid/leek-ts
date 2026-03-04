@@ -46,6 +46,7 @@ export class NameChangeRequestCommand extends AugmentedSubcommand {
 		const channel = inter.options.getChannel<
 			ChannelType.GuildText | ChannelType.PublicThread
 		>("channel", true);
+		const validate = inter.options.getBoolean("validate", false) ?? false;
 
 		try {
 			await this.db
@@ -54,6 +55,7 @@ export class NameChangeRequestCommand extends AugmentedSubcommand {
 					{
 						gid: inter.guildId,
 						channel: channel.id,
+						validate,
 					},
 				])
 				.onConflictDoUpdate({
