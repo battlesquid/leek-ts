@@ -11,7 +11,6 @@ const client = new SapphireClient({
 	intents: [
 		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildMessages,
-		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.GuildMessageReactions,
 	],
@@ -19,6 +18,16 @@ const client = new SapphireClient({
 		level:
 			getenv("NODE_ENV") === "development" ? LogLevel.Trace : LogLevel.Info,
 		instance: new PinoLoggerAdapter(logger),
+	},
+	// Without the GuildMembers intent, member update/leave events are never
+	// received, so cached members can go stale. Code that depends on a
+	// member's roles or permissions fetches with `force: true`; this sweeper
+	// keeps the otherwise-unused cache from growing indefinitely.
+	sweepers: {
+		guildMembers: {
+			interval: 3600,
+			filter: () => (member) => member.id !== member.client.user.id,
+		},
 	},
 	partials: [
 		Partials.Message,

@@ -63,15 +63,9 @@ export class NameChangeRequestApproveListener extends AugmentedListener<
 			return;
 		}
 
-		const [targetMember, targetMemberError] = await trycatch(async () => {
-			if (message.channel.isThread()) {
-				logger.info("Getting target member from thread.");
-				return message.guild?.members.fetch(message.author.id);
-			}
-			return message.member?.partial
-				? await message.member.fetch(true)
-				: message.member;
-		});
+		const [targetMember, targetMemberError] = await trycatch(() =>
+			message.guild.members.fetch({ user: message.author.id, force: true }),
+		);
 		if (targetMemberError) {
 			logger.error(
 				{ error: targetMemberError },
@@ -85,7 +79,7 @@ export class NameChangeRequestApproveListener extends AugmentedListener<
 		}
 
 		const [initiator, initiatorError] = await trycatch(() =>
-			message.guild.members.fetch(user.id),
+			message.guild.members.fetch({ user: user.id, force: true }),
 		);
 		if (initiatorError) {
 			logger.error(

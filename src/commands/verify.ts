@@ -702,6 +702,11 @@ export class VerifyCommand extends AugmentedSubcommand {
 			{ users: uniqueHistory.map((m) => m.author.displayName) },
 			`Retrieved ${uniqueHistory.size} unique requests.`,
 		);
+		if (uniqueHistory.size === 0) {
+			return [];
+		}
+		// Requesting members by ID (max 100) does not require the GuildMembers
+		// intent, and returns up to date roles.
 		const members = await channel.guild.members.fetch({
 			user: [...uniqueHistory.mapValues((message) => message.author).values()],
 		});

@@ -82,7 +82,7 @@ export class ReactRoleRemoveListener extends AugmentedListener<
 		}
 
 		const [member, memberFetchError] = await trycatch(() =>
-			message.guild.members.fetch(user.id),
+			message.guild.members.fetch({ user: user.id, force: true }),
 		);
 		if (memberFetchError) {
 			logger.error(
