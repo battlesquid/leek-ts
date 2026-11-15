@@ -1,5 +1,6 @@
 import { InteractionContextType, SlashCommandBuilder } from "discord.js";
 import type { CommandBundle } from ".";
+import about from "./about";
 import hall_of_fame from "./hall_of_fame";
 import imageboard from "./imageboard";
 import logs from "./logs";
@@ -27,6 +28,7 @@ export const DOCUMENTED_COMMANDS: (
 	timeout,
 	verify,
 	settings,
+	about,
 ];
 
 const help = new SlashCommandBuilder()

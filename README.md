@@ -8,7 +8,7 @@ Primarily made to help out on VEX Robotics related servers. Some features are de
 
 ## Commands
 
-Use `/help` in a server to see every command, and `/settings` to view the server's current configuration.
+Use `/help` in a server to see every command, `/settings` to view the server's current configuration, and `/about` for general information and links.
 
 ## Privacy
 

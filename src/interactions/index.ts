@@ -22,6 +22,7 @@ export interface CommandBundle<
 	};
 }
 
+export { default as about } from "./about";
 export { default as hall_of_fame } from "./hall_of_fame";
 export { default as help } from "./help";
 export { default as imageboard } from "./imageboard";
