@@ -10,6 +10,7 @@ leek is open source. Everything described here can be verified in the source cod
 
 - leek stores **server configuration** (channel, role, and server IDs) that server staff set up with slash commands.
 - The only user data leek stores in its database is **pending verification requests**: your user ID and requested nickname. These are deleted when you are verified or when the server disables verification.
+- When leek is removed from a server, **all of that server's data is deleted automatically**.
 - leek **reads message content** to provide moderation features (imageboards, deleted-message logs, verification, and name change requests). It does **not** store message content in its database.
 - leek does **not** sell, rent, or share data with anyone for advertising or analytics, and does not use message content to train AI or machine learning models.
 
@@ -78,12 +79,14 @@ Information may be disclosed if required by law or to comply with Discord's Term
 
 | Data | Kept until |
 | --- | --- |
-| Server configuration | Disabled with the feature's command, for example `/logs disable` or `/hall_of_fame disable`, or on request |
-| Pending verification requests | You are verified, or the server runs `/verify disable` |
+| Server configuration | Disabled with the feature's command, for example `/logs disable` or `/hall_of_fame disable`, or leek is removed from the server |
+| Pending verification requests | You are verified, the server runs `/verify disable`, or leek is removed from the server |
 | Message content | Bot restart (in memory only) |
 | Operational logs | [LOG RETENTION PERIOD] |
 
-Removing leek from a server does **not** automatically delete that server's configuration. To have all data for a server or for your user ID deleted, contact us (see below) with the relevant server or user ID. Requests are completed within 30 days.
+When leek is removed from a server (kicked, banned, or the server is deleted), it immediately deletes all data stored for that server. If leek was offline at the time, the data is deleted the next time it starts. Message content and operational logs aren't covered by this. Message content is only held in memory, and operational logs expire on the schedule above.
+
+To have your data deleted without removing leek, for example your pending verification request in a particular server, contact us (see below) with the relevant server or user ID. Requests are completed within 30 days.
 
 Server staff can see the current configuration at any time with `/settings`.
 
