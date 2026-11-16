@@ -712,55 +712,53 @@ export class VerifyCommand extends AugmentedSubcommand {
 		});
 		logger.debug("Resolved all members");
 
-		const requests = [
-			...uniqueHistory.map((message): VerifyUser | undefined => {
-				logger.debug(
-					{ content: message.content },
-					`Now processing ${message.author.displayName}`,
-				);
-				const isUser = !message.author.bot;
-				const noExistingEntry =
-					users.find((e) => e.uid === message.author.id) === undefined;
-				const match = message.content.match(VERIFY_REGEX);
-				const valid =
-					isUser &&
-					match &&
-					noExistingEntry &&
-					hasGroupMatches(match, ["name", "team"] as const);
+		const requests = uniqueHistory.map((message): VerifyUser | undefined => {
+			logger.debug(
+				{ content: message.content },
+				`Now processing ${message.author.displayName}`,
+			);
+			const isUser = !message.author.bot;
+			const noExistingEntry =
+				users.find((e) => e.uid === message.author.id) === undefined;
+			const match = message.content.match(VERIFY_REGEX);
+			const valid =
+				isUser &&
+				match &&
+				noExistingEntry &&
+				hasGroupMatches(match, ["name", "team"] as const);
 
-				logger.debug({
-					isUser,
-					noExistingEntry,
-					content: message.content,
-					match: !!match,
-					valid,
-				});
+			logger.debug({
+				isUser,
+				noExistingEntry,
+				content: message.content,
+				match: !!match,
+				valid,
+			});
 
-				if (!valid) {
-					return undefined;
-				}
+			if (!valid) {
+				return undefined;
+			}
 
-				const member = members.get(message.author.id);
-				logger.info({ roles: member?.roles.cache.keys() });
-				if (member?.roles.cache.hasAll(...settings.roles)) {
-					return undefined;
-				}
+			const member = members.get(message.author.id);
+			logger.info({ roles: member?.roles.cache.keys() });
+			if (member?.roles.cache.hasAll(...settings.roles)) {
+				return undefined;
+			}
 
-				logger.debug(
-					`${member?.displayName} does not have all roles, continuing.`,
-				);
-				const nick = VerifyRequestListener.formatNickname(
-					match.groups.name,
-					match.groups.team,
-				);
+			logger.debug(
+				`${member?.displayName} does not have all roles, continuing.`,
+			);
+			const nick = VerifyRequestListener.formatNickname(
+				match.groups.name,
+				match.groups.team,
+			);
 
-				return {
-					gid: message.guildId,
-					uid: message.author.id,
-					nick,
-				};
-			}),
-		];
+			return {
+				gid: message.guildId,
+				uid: message.author.id,
+				nick,
+			};
+		});
 		const result = requests.filter((r) => r !== undefined);
 		logger.info({ result }, "Finished processing unverified users");
 		return result;

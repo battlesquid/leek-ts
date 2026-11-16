@@ -34,9 +34,12 @@ export class HelpCommand extends AugmentedCommand {
 	static readonly catalog: AnyCommandBundle[] = [...DOCUMENTED_COMMANDS, help];
 
 	hints() {
-		// IDs are resolved at runtime; add hints here after the first deploy to
-		// avoid re-registration.
-		return new CommandHints({});
+		return new CommandHints({
+			chat: {
+				development: "1571704011436990666",
+				production: "",
+			},
+		});
 	}
 
 	public override registerApplicationCommands(registry: Command.Registry) {

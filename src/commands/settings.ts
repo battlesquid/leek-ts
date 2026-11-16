@@ -63,9 +63,12 @@ const channelOrNotSet = (id: string | null | undefined) =>
 })
 export class SettingsCommand extends AugmentedCommand {
 	hints() {
-		// IDs are resolved at runtime; add hints here after the first deploy to
-		// avoid re-registration.
-		return new CommandHints({});
+		return new CommandHints({
+			chat: {
+				development: "1571704095247573105",
+				production: "",
+			},
+		});
 	}
 
 	public override registerApplicationCommands(registry: Command.Registry) {

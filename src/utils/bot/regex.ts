@@ -8,7 +8,10 @@ export const YOUTUBE_REGEX =
 export type RegExpMatchArrayWithGroups<Keys extends string> = Omit<
 	RegExpMatchArray,
 	"groups"
-> & { groups: Record<Keys, string>; 0: string };
+> & {
+	groups: Record<Keys, string>;
+	0: string;
+};
 
 export const hasGroupMatches = <T extends readonly string[]>(
 	match: RegExpMatchArray | null,

@@ -7,8 +7,8 @@ import {
 	SlashCommandBuilder,
 	SlashCommandSubcommandBuilder,
 } from "discord.js";
-import { combinePermissions } from "../utils/bot/bitwise";
 import type { CommandBundle } from ".";
+import { combinePermissions } from "../utils/bot/bitwise";
 
 const enable = new SlashCommandSubcommandBuilder()
 	.setName("enable")

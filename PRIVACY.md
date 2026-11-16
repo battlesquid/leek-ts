@@ -20,13 +20,13 @@ leek is open source. Everything described here can be verified in the source cod
 
 When server staff configure a feature, leek saves the following, keyed by the server's ID:
 
-| Feature | Data stored |
-| --- | --- |
-| Hall of Fame | IDs of channels designated as halls of fame |
-| Imageboards | IDs of imageboard channels and whitelisted roles |
-| Logs | IDs of the channels that receive message, image, and moderation logs |
-| Name change requests | ID of the name change request channel |
-| Verification | Verification type, new user channel ID, IDs of roles given on approval, and whether to post a greeting |
+| Feature              | Data stored                                                                                            |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
+| Hall of Fame         | IDs of channels designated as halls of fame                                                            |
+| Imageboards          | IDs of imageboard channels and whitelisted roles                                                       |
+| Logs                 | IDs of the channels that receive message, image, and moderation logs                                   |
+| Name change requests | ID of the name change request channel                                                                  |
+| Verification         | Verification type, new user channel ID, IDs of roles given on approval, and whether to post a greeting |
 
 Reactroles and timeouts don't store any data in leek's database. Reactrole groups live in the Discord message that displays them.
 
@@ -44,19 +44,19 @@ Server staff can view pending requests with `/verify list`.
 
 leek receives the content of messages in channels it can see. It only acts on the content in these cases:
 
-| Feature | What leek does with content |
-| --- | --- |
-| Imageboards | Checks whether a message in an imageboard channel contains a link or attachment, and deletes it if not. |
-| Message and image logs | When a message is deleted, posts its text and images to the server's configured log channel so that server's staff can review it. |
-| Verification | Reads messages in the new user channel to find `Name | Team` requests. `/verify rescan` reads up to the last 100 messages of that channel. |
-| Name change requests | When staff approve a request with a reaction, applies the message's text as the author's nickname. |
-| Hall of Fame | When staff use **Add to Hall of Fame** on a message, reposts its text, images, and a link to it in the server's hall of fame channel. |
+| Feature                | What leek does with content                                                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Imageboards            | Checks whether a message in an imageboard channel contains a link or attachment, and deletes it if not.                                     |
+| Message and image logs | When a message is deleted, posts its text and images to the server's configured log channel so that server's staff can review it.           |
+| Verification           | Reads messages in the new user channel to find `Name \| Team` requests. `/verify rescan` reads up to the last 100 messages of that channel. |
+| Name change requests   | When staff approve a request with a reaction, applies the message's text as the author's nickname.                                          |
+| Hall of Fame           | When staff use **Add to Hall of Fame** on a message, reposts its text, images, and a link to it in the server's hall of fame channel.       |
 
 Message content is held only in the bot's short-lived in-memory cache, which is needed to log deleted messages, and is cleared when the bot restarts. It is never written to leek's database. Content that leek reposts, such as logs and hall of fame posts, is sent only to channels in the **same server** the message came from.
 
 ### 4. Operational logs
 
-To keep leek running and debug problems, leek writes operational logs. These may include server, channel, message, and user IDs, usernames, verification nicknames, and, when a command fails, the details of that command invocation (the command used and the options provided). Logs are used only to operate and fix the bot and are kept for **[LOG RETENTION PERIOD]**.
+To keep leek running and debug problems, leek writes operational logs. These may include server, channel, message, and user IDs, usernames, verification nicknames, and, when a command fails, the details of that command invocation (the command used and the options provided). Logs are used only to operate and fix the bot and are kept for 14 days.
 
 ### 5. Information Discord provides
 
@@ -77,12 +77,12 @@ Information may be disclosed if required by law or to comply with Discord's Term
 
 ## Retention and deletion
 
-| Data | Kept until |
-| --- | --- |
-| Server configuration | Disabled with the feature's command, for example `/logs disable` or `/hall_of_fame disable`, or leek is removed from the server |
-| Pending verification requests | You are verified, the server runs `/verify disable`, or leek is removed from the server |
-| Message content | Bot restart (in memory only) |
-| Operational logs | [LOG RETENTION PERIOD] |
+| Data                          | Kept until                                                                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Server configuration          | Disabled with the feature's command, for example `/logs disable` or `/hall_of_fame disable`, or leek is removed from the server |
+| Pending verification requests | You are verified, the server runs `/verify disable`, or leek is removed from the server                                         |
+| Message content               | Bot restart (in memory only)                                                                                                    |
+| Operational logs              | 14 days                                                                                                                         |
 
 When leek is removed from a server (kicked, banned, or the server is deleted), it immediately deletes all data stored for that server. If leek was offline at the time, the data is deleted the next time it starts. Message content and operational logs aren't covered by this. Message content is only held in memory, and operational logs expire on the schedule above.
 
@@ -108,4 +108,4 @@ If this policy changes, the updated version will be posted at this location with
 
 ## Contact
 
-For questions or data requests: **[CONTACT METHOD, such as an email address or support server invite]**
+For questions or data requests, join the [leek Discord server](https://discord.gg/G4X5dJ3SCP).

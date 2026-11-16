@@ -3,8 +3,8 @@ import {
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 } from "discord.js";
-import { combinePermissions } from "../utils/bot/bitwise";
 import type { CommandBundle } from ".";
+import { combinePermissions } from "../utils/bot/bitwise";
 import hall_of_fame from "./hall_of_fame";
 import imageboard from "./imageboard";
 import logs from "./logs";

@@ -3,8 +3,8 @@ import {
 	PermissionFlagsBits,
 	SlashCommandBuilder,
 } from "discord.js";
-import { combinePermissions } from "../utils/bot/bitwise";
 import type { CommandBundle } from ".";
+import { combinePermissions } from "../utils/bot/bitwise";
 
 const permissions = [PermissionFlagsBits.ModerateMembers];
 

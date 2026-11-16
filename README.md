@@ -12,4 +12,4 @@ Use `/help` in a server to see every command, `/settings` to view the server's c
 
 ## Privacy
 
-See the [Privacy Policy](PRIVACY.md). Details on the privileged gateway intents leek uses are in [docs/privileged-intents.md](docs/privileged-intents.md).
+See the [Privacy Policy](PRIVACY.md).
