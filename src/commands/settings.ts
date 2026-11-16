@@ -66,7 +66,7 @@ export class SettingsCommand extends AugmentedCommand {
 		return new CommandHints({
 			chat: {
 				development: "1571704095247573105",
-				production: "",
+				production: "1571769352473022514",
 			},
 		});
 	}

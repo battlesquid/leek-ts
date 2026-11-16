@@ -37,7 +37,7 @@ export class HelpCommand extends AugmentedCommand {
 		return new CommandHints({
 			chat: {
 				development: "1571704011436990666",
-				production: "",
+				production: "1571769441535000586",
 			},
 		});
 	}
