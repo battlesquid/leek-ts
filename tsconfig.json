@@ -5,6 +5,7 @@
 		"module": "Node16",
 		"strict": true,
 		"outDir": "dist",
+		"rootDir": "src",
 		"resolveJsonModule": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,

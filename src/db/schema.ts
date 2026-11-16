@@ -10,7 +10,10 @@ import {
 export const imageboard = pgTable("imageboard", {
 	gid: varchar("gid").primaryKey(),
 	boards: text("boards").array().notNull(),
-	whitelist: text("whitelist").array().default(sql`'{}'::text[]`).notNull(),
+	whitelist: text("whitelist")
+		.array()
+		.default(sql`'{}'::text[]`)
+		.notNull(),
 });
 
 export const logSettings = pgTable("log_settings", {
@@ -48,7 +51,10 @@ export type VerifySettings = typeof verifySettings.$inferSelect;
 
 export const hallOfFameSettings = pgTable("hall_of_fame", {
 	gid: varchar("gid").primaryKey(),
-	halls: text("halls").array().default(sql`'{}'::text[]`).notNull(),
+	halls: text("halls")
+		.array()
+		.default(sql`'{}'::text[]`)
+		.notNull(),
 });
 
 export const nameChangeRequestSettings = pgTable("name_change_request", {

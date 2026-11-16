@@ -1,6 +1,11 @@
 import type { SubcommandMapping } from "@sapphire/plugin-subcommands";
 import { snakeToCamelCase } from "@sapphire/utilities";
-import { type Snowflake, type TimestampStylesString, time } from "discord.js";
+import {
+	PermissionsBitField,
+	type Snowflake,
+	type TimestampStylesString,
+	time,
+} from "discord.js";
 import { capitalize } from "../general/strings";
 
 export const timestring = (ms: number, style: TimestampStylesString) => {
@@ -36,4 +41,27 @@ export const slashCommandMention = (
 ) => {
 	const formattedSubcommand = subcommand === undefined ? "" : ` ${subcommand}`;
 	return `</${command}${formattedSubcommand}:${id}>`;
+};
+
+// Flags whose names differ from what Discord shows in its UI.
+const PERMISSION_DISPLAY_NAMES: Record<string, string> = {
+	ManageGuild: "Manage Server",
+	ModerateMembers: "Timeout Members",
+};
+
+/**
+ * Converts permission flags into the names shown in Discord, e.g.
+ * "Manage Channels".
+ */
+export const formatPermissions = (permissions: bigint[]) => {
+	if (permissions.length === 0) {
+		return [];
+	}
+	return new PermissionsBitField(permissions)
+		.toArray()
+		.map(
+			(name) =>
+				PERMISSION_DISPLAY_NAMES[name] ??
+				name.replace(/([a-z])([A-Z])/g, "$1 $2"),
+		);
 };
